@@ -188,8 +188,12 @@ async function syncFromDrive() {
       if (data.shop_shops) saveToStorage('hisaber_khata_shops_v1', data.shop_shops);
       if (data.goods_entries) saveToStorage('hisaber_khata_goods_v1', data.goods_entries);
 
-      showToast('ড্রাইভ থেকে ডেটা লোড হয়েছে', 'success');
-      setTimeout(() => { window.location.reload(); }, 1000);
+      // পেজ রিফ্রেশ হওয়ার লুপ বন্ধ করার জন্য sessionStorage ব্যবহার
+if (!sessionStorage.getItem('drive_synced_reload')) {
+  sessionStorage.setItem('drive_synced_reload', 'true');
+  showToast('ড্রাইভ থেকে ডেটা লোড হয়েছে', 'success');
+  setTimeout(() => { window.location.reload(); }, 1000);
+}
     } else {
       // প্রথমবার লগইন করলে ড্রাইভে ফাইল থাকবে না, তাই নতুন করে সেভ করবে
       saveToDrive();
