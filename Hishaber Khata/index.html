@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1E3A8A">
+<title>হিসাবের খাতা</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231E3A8A'/%3E%3Ctext x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='sans-serif'%3E%E0%A6%B9%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/common.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="js/sync.js"></script>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ========== HEADER ========== -->
+  <div class="header">
+    <h1>হিসাবের খাতা</h1>
+    <button class="header-icon-btn" id="installIconBtn" onclick="handleInstallClick()" title="ইনস্টল করুন">📲</button>
+    <button class="header-icon-btn" onclick="openMenu()" title="মেনু">⋮</button>
+  </div>
+
+  <!-- ========== HOME SCREEN ========== -->
+  <div class="screen">
+    <div class="home-title">
+      <h1>হিসাবের খাতা</h1>
+      <p>আপনার দৈনন্দিন খরচের হিসাব</p>
+    </div>
+
+    <div class="home-cards">
+      <button class="home-card card-home" onclick="navigateTo('home.html')">
+        <div class="home-card-icon">🏠</div>
+        <div class="home-card-text">
+          <h3>বাসার হিসাব</h3>
+          <p>পারিবারিক খরচের হিসাব রাখুন</p>
+        </div>
+        <div class="home-card-arrow">›</div>
+      </button>
+
+      <button class="home-card card-shop" onclick="navigateTo('shop.html')">
+        <div class="home-card-icon">🏪</div>
+        <div class="home-card-text">
+          <h3>দোকানের হিসাব</h3>
+          <p>বিক্রয় ও বাকির হিসাব রাখুন</p>
+        </div>
+        <div class="home-card-arrow">›</div>
+      </button>
+
+      <button class="home-card card-goods" onclick="navigateTo('goods.html')">
+  <div class="home-card-icon">📦</div>
+  <div class="home-card-text">
+    <h3>মালামাল ক্রয়ের হিসাব</h3>
+    <p>মাল কেনার হিসাব রাখুন</p>
+  </div>
+  <div class="home-card-arrow">›</div>
+</button>
+
+  <!-- ========== COMING SOON SCREEN ========== -->
+  <div id="comingSoonScreen" class="screen hidden">
+    <div class="header" style="margin:-16px -16px 16px;">
+      <button class="back-btn" onclick="hideComingSoon()">←</button>
+      <h1 id="csTitle">শীঘ্রই আসছে</h1>
+    </div>
+    <div class="coming-soon">
+      <div class="cs-icon">🚧</div>
+      <h2 id="csName">শীঘ্রই আসছে</h2>
+      <p>এই মডিউলটি খুব শীঘ্রই যোগ করা হবে</p>
+      <br>
+      <button class="btn btn-save" style="max-width:220px;margin:0 auto;" onclick="hideComingSoon()">← হোমে ফিরুন</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== SETTINGS MENU (⋮) ========== -->
+<div class="menu-overlay" id="menuOverlay"></div>
+<div class="menu-panel" id="menuPanel">
+  <div class="menu-header">
+    <h3>মেনু</h3>
+    <button class="menu-close" onclick="closeMenu()">✕</button>
+  </div>
+  <div class="menu-list">
+    <button class="menu-item" id="loginBtn" onclick="handleGoogleLogin();">
+      <span class="mi-icon">☁️</span>
+      <span id="loginBtnText">Google Drive-এ সিঙ্ক করুন</span>
+    </button>
+    <button class="menu-item" id="menuInstall" onclick="closeMenu(); handleInstallClick();">
+      <span class="mi-icon">📲</span>
+      <span>অ্যাপ ইনস্টল করুন</span>
+    </button>
+    <div class="menu-divider"></div>
+    <button class="menu-item" onclick="closeMenu(); downloadBackup();">
+      <span class="mi-icon">💾</span>
+      <span>ব্যাকআপ ডাউনলোড</span>
+    </button>
+    <button class="menu-item" onclick="closeMenu(); triggerRestore();">
+      <span class="mi-icon">📂</span>
+      <span>ব্যাকআপ রিস্টোর</span>
+    </button>
+    <button class="menu-item" onclick="closeMenu(); navigateTo('faq.html');">
+  <span class="mi-icon">❓</span>
+  <span>সাধারণ জিজ্ঞাসা (FAQ)</span>
+</button>
+    <div class="menu-divider"></div>
+    <button class="menu-item" onclick="closeMenu(); navigateTo('about.html');">
+      <span class="mi-icon">ℹ️</span>
+      <span>অ্যাপ সম্পর্কে</span>
+    </button>
+  </div>
+</div>
+
+<!-- Hidden file input for restore -->
+<input type="file" id="restoreFileInput" accept=".json,application/json" style="display:none;" onchange="handleRestoreFile(event)">
+
+<!-- ========== INSTALL BANNER ========== -->
+<div class="install-banner" id="installBanner">
+  <div class="ib-icon">📲</div>
+  <div class="ib-content">
+    <h4>হিসাবের খাতা ইনস্টল করুন</h4>
+    <p>হোম স্ক্রিন থেকে সরাসরি খুলুন, অ্যাপের মতো ব্যবহার করুন।</p>
+    <div class="ib-actions">
+      <button class="ib-install" onclick="hideInstallBanner(); handleInstallClick();">ইনস্টল করুন</button>
+      <button class="ib-later" onclick="postponeInstallBanner();">পরে</button>
+    </div>
+  </div>
+  <button class="ib-close" onclick="dismissInstallBanner();">✕</button>
+</div>
+
+<!-- ========== ANDROID INSTALL GUIDE MODAL ========== -->
+<div class="ios-modal-overlay" id="iosModalOverlay">
+  <div class="ios-modal">
+    <h3>📲 অ্যাপটি ইনস্টল করুন</h3>
+    <p style="font-size:13.5px;color:#64748B;margin-bottom:8px;">
+      Android-এ হোম স্ক্রিনে যোগ করতে:
+    </p>
+    <ol>
+      <li>উপরে ডানে <b>⋮</b> (তিন ডট) মেনুতে ক্লিক করুন</li>
+      <li><b>"Install app"</b> বা <b>"Add to Home screen"</b> বেছে নিন</li>
+      <li><b>Install</b> / <b>Add</b> চাপুন</li>
+    </ol>
+    <button class="modal-btn" onclick="closeIOSInstallModal()">বুঝেছি</button>
+  </div>
+</div>
+
+<!-- ========== TOAST ========== -->
+<div class="toast" id="toast"></div>
+
+<script src="js/common.js"></script>
+<script>
+/* ============================================================
+   হোম স্ক্রিনের নিজস্ব লজিক
+   ============================================================ */
+
+/* Coming Soon দেখান */
+function showComingSoon(name) {
+  document.querySelector('.screen:not(.hidden)').classList.add('hidden');
+  document.getElementById('comingSoonScreen').classList.remove('hidden');
+  document.getElementById('csName').textContent = name;
+  document.getElementById('csTitle').textContent = name;
+}
+
+function hideComingSoon() {
+  document.getElementById('comingSoonScreen').classList.add('hidden');
+  document.querySelector('.screen').classList.remove('hidden');
+}
+
+/* About Dialog */
+function showAbout() {
+  const ver = '১.০';
+  alert(
+    'হিসাবের খাতা\n' +
+    'সংস্করণ: ' + ver + '\n\n' +
+    'আপনার দৈনন্দিন খরচের হিসাব রাখার সহজ অ্যাপ।\n\n' +
+    '• সম্পূর্ণ অফলাইনে কাজ করে\n' +
+    '• ডেটা আপনার ডিভাইসেই থাকে\n' +
+    '• বাসার ও দোকানের আলাদা হিসাব\n\n' +
+    'ডেটা ব্যাকআপ রাখতে মেনু থেকে "ব্যাকআপ ডাউনলোড" ব্যবহার করুন।'
+  );
+}
+  /* Service Worker Registration (শুধু হোমে) */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+/* পেজ লোড হলে — ইনস্টল টাইমার চালু */
+document.addEventListener('DOMContentLoaded', () => {
+  updateInstallButtons();
+  startInstallBannerTimer();
+});
+</script>
+</body>
+</html>
