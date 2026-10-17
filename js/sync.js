@@ -211,3 +211,9 @@ function logoutGoogle() {
   updateLoginUI(false);
   showToast('সিঙ্ক বন্ধ করা হয়েছে', 'success');
 }
+// পেজ পুরোপুরি লোড হলে sessionStorage রিসেট করা, যাতে ভবিষ্যতে আবার কাজ করে
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    sessionStorage.removeItem('drive_synced_reload');
+  }
+});
