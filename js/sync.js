@@ -168,6 +168,7 @@ async function saveToDrive() {
 }
 
 // ড্রাইভ থেকে ডেটা লোড করা
+
 async function syncFromDrive() {
   if (!accessToken) return;
   try {
@@ -183,11 +184,32 @@ async function syncFromDrive() {
       });
       const data = await fileRes.json();
       
+      // 🚨 অটো-সিঙ্ক বন্ধ করার জন্য ফ্ল্যাগ অন করা হলো
+      isSyncingFromCloud = true; 
+
       if (data.home_entries) saveToStorage('hisaber_khata_home_v1', data.home_entries);
       if (data.home_categories) saveToStorage('hisaber_khata_categories_v1', data.home_categories);
       if (data.shop_entries) saveToStorage('hisaber_khata_shop_v1', data.shop_entries);
       if (data.shop_shops) saveToStorage('hisaber_khata_shops_v1', data.shop_shops);
       if (data.goods_entries) saveToStorage('hisaber_khata_goods_v1', data.goods_entries);
+
+      // কাজ শেষে আবার ফ্ল্যাগ অফ করে দেওয়া হলো
+      isSyncingFromCloud = false;
+
+      // পেজ রিফ্রেশ হওয়ার লুপ বন্ধ করার জন্য sessionStorage ব্যবহার
+      if (!sessionStorage.getItem('drive_synced_reload')) {
+        sessionStorage.setItem('drive_synced_reload', 'true');
+        showToast('ড্রাইভ থেকে ডেটা লোড হয়েছে', 'success');
+        setTimeout(() => { window.location.reload(); }, 1000);
+      }
+    } else {
+      // প্রথমবার লগইন করলে ড্রাইভে ফাইল থাকবে না, তাই নতুন করে সেভ করবে
+      saveToDrive();
+    }
+  } catch (error) {
+    console.error('Drive Load Error:', error);
+  }
+}
 
       // পেজ রিফ্রেশ হওয়ার লুপ বন্ধ করার জন্য sessionStorage ব্যবহার
 if (!sessionStorage.getItem('drive_synced_reload')) {
