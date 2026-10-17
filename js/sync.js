@@ -24,10 +24,9 @@ window.addEventListener('load', () => {
         if (tokenResponse && tokenResponse.access_token) {
           accessToken = tokenResponse.access_token;
           
-          // ব্রাউজারের লোকাল স্টোরেজে টোকেন সেভ করে রাখা (যাতে বারবার লগইন না লাগে)
+          // ব্রাউজারের লোকাল স্টোরেজে টোকেন সেভ করে রাখা
           localStorage.setItem('gdrive_access_token', accessToken);
           
-          // টোকেন কখন এক্সপায়ার হবে তার সময় সেভ করা (সাধারণত ৩৬০০ সেকেন্ড)
           if (tokenResponse.expires_in) {
             const expiryTime = Date.now() + (tokenResponse.expires_in * 1000);
             localStorage.setItem('gdrive_token_expiry', expiryTime);
@@ -39,7 +38,6 @@ window.addEventListener('load', () => {
       },
     });
 
-    // পেজ লোড হওয়ার সময় চেক করা হবে আগের টোকেন এখনো কাজ করে কি না
     checkExistingToken();
   };
   
@@ -52,13 +50,11 @@ function checkExistingToken() {
   const expiry = localStorage.getItem('gdrive_token_expiry');
 
   if (savedToken && expiry) {
-    // যদি টোকেনের মেয়াদ শেষ না হয়ে থাকে (৫ মিনিট বাফার দিয়ে)
     if (Date.now() < (parseInt(expiry) - 300000)) {
       accessToken = savedToken;
       updateLoginUI(true);
       syncFromDrive(); // সাইলেন্টলি ডেটা লোড করবে
     } else {
-      // মেয়াদ শেষ হয়ে গেলে টোকেন মুছে ফেলবে
       localStorage.removeItem('gdrive_access_token');
       localStorage.removeItem('gdrive_token_expiry');
       updateLoginUI(false);
@@ -157,10 +153,8 @@ async function saveToDrive() {
         body: multipartRequestBody
       });
     }
-    // showToast('ড্রাইভে সিঙ্ক সম্পন্ন হয়েছে', 'success'); // চাইলে আনকমেন্ট করতে পারেন
   } catch (error) {
     console.error('Drive Save Error:', error);
-    // টোকেন এক্সপায়ার হলে আবার লগইন করতে বলবে
     if (error.message.includes('401')) {
        logoutGoogle();
     }
@@ -168,7 +162,6 @@ async function saveToDrive() {
 }
 
 // ড্রাইভ থেকে ডেটা লোড করা
-
 async function syncFromDrive() {
   if (!accessToken) return;
   try {
@@ -184,7 +177,7 @@ async function syncFromDrive() {
       });
       const data = await fileRes.json();
       
-      // 🚨 অটো-সিঙ্ক বন্ধ করার জন্য ফ্ল্যাগ অন করা হলো
+      // অটো-সিঙ্ক বন্ধ করার জন্য ফ্ল্যাগ অন করা হলো
       isSyncingFromCloud = true; 
 
       if (data.home_entries) saveToStorage('hisaber_khata_home_v1', data.home_entries);
@@ -211,21 +204,6 @@ async function syncFromDrive() {
   }
 }
 
-      // পেজ রিফ্রেশ হওয়ার লুপ বন্ধ করার জন্য sessionStorage ব্যবহার
-if (!sessionStorage.getItem('drive_synced_reload')) {
-  sessionStorage.setItem('drive_synced_reload', 'true');
-  showToast('ড্রাইভ থেকে ডেটা লোড হয়েছে', 'success');
-  setTimeout(() => { window.location.reload(); }, 1000);
-}
-    } else {
-      // প্রথমবার লগইন করলে ড্রাইভে ফাইল থাকবে না, তাই নতুন করে সেভ করবে
-      saveToDrive();
-    }
-  } catch (error) {
-    console.error('Drive Load Error:', error);
-  }
-}
-
 // লগআউট ফাংশন (ভবিষ্যতে দরকার হতে পারে)
 function logoutGoogle() {
   localStorage.removeItem('gdrive_access_token');
@@ -234,7 +212,8 @@ function logoutGoogle() {
   updateLoginUI(false);
   showToast('সিঙ্ক বন্ধ করা হয়েছে', 'success');
 }
-// পেজ পুরোপুরি লোড হলে sessionStorage রিসেট করা, যাতে ভবিষ্যতে আবার কাজ করে
+
+// পেজ পুরোপুরি লোড হলে sessionStorage রিসেট করা
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) {
     sessionStorage.removeItem('drive_synced_reload');
