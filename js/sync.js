@@ -1,8 +1,7 @@
 /* ============================================================
-   Google Drive Sync Logic
+   Google Drive Sync Logic with Refresh Token
    ============================================================ */
 
-// আপনার আসল Client ID এখানে বসানো হলো
 const CLIENT_ID = '555637526676-tje8vroaiqqjqje34uhaecf9vf7hfn6g.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 
@@ -12,13 +11,11 @@ let accessToken = null;
 // গুগল স্ক্রিপ্ট পুরোপুরি লোড হওয়ার পর এই ফাংশনটি চলবে
 window.addEventListener('load', () => {
   const initGoogle = () => {
-    // যদি গুগলের স্ক্রিপ্ট এখনো লোড না হয়ে থাকে, তবে ৫০০ মিলি-সেকেন্ড পর আবার চেক করবে
     if (typeof google === 'undefined' || !google.accounts) {
       setTimeout(initGoogle, 500);
       return;
     }
     
-    // গুগলের লগইন ক্লায়েন্ট চালু করা
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
@@ -26,20 +23,47 @@ window.addEventListener('load', () => {
         if (tokenResponse && tokenResponse.access_token) {
           accessToken = tokenResponse.access_token;
           
-          const btnText = document.getElementById('loginBtnText');
-          const btn = document.getElementById('loginBtn');
+          // ব্রাউজারের লোকাল স্টোরেজে টোকেন সেভ করে রাখা (যাতে বারবার লগইন না লাগে)
+          localStorage.setItem('gdrive_access_token', accessToken);
           
-          if (btnText) btnText.textContent = 'গুগল ড্রাইভে সিঙ্কড ✅';
-          if (btn) btn.style.background = '#ECFDF5'; // হালকা সবুজ ব্যাকগ্রাউন্ড
-          
-          syncFromDrive(); // লগইন সফল হলে ড্রাইভ থেকে ডেটা আনবে
+          // টোকেন কখন এক্সপায়ার হবে তার সময় সেভ করা (সাধারণত ৩৬০০ সেকেন্ড)
+          if (tokenResponse.expires_in) {
+            const expiryTime = Date.now() + (tokenResponse.expires_in * 1000);
+            localStorage.setItem('gdrive_token_expiry', expiryTime);
+          }
+
+          updateLoginUI(true);
+          syncFromDrive(); // লগইন সফল হলে ডেটা আনবে
         }
       },
     });
+
+    // পেজ লোড হওয়ার সময় চেক করা হবে আগের টোকেন এখনো কাজ করে কি না
+    checkExistingToken();
   };
   
   initGoogle();
 });
+
+// আগের সেভ করা টোকেন চেক করা
+function checkExistingToken() {
+  const savedToken = localStorage.getItem('gdrive_access_token');
+  const expiry = localStorage.getItem('gdrive_token_expiry');
+
+  if (savedToken && expiry) {
+    // যদি টোকেনের মেয়াদ শেষ না হয়ে থাকে (৫ মিনিট বাফার দিয়ে)
+    if (Date.now() < (parseInt(expiry) - 300000)) {
+      accessToken = savedToken;
+      updateLoginUI(true);
+      syncFromDrive(); // সাইলেন্টলি ডেটা লোড করবে
+    } else {
+      // মেয়াদ শেষ হয়ে গেলে টোকেন মুছে ফেলবে
+      localStorage.removeItem('gdrive_access_token');
+      localStorage.removeItem('gdrive_token_expiry');
+      updateLoginUI(false);
+    }
+  }
+}
 
 // লগইন বাটনে ক্লিক করলে
 function handleGoogleLogin() {
@@ -54,9 +78,25 @@ function handleGoogleLogin() {
   }
 }
 
+// UI আপডেট করার ফাংশন
+function updateLoginUI(isLoggedIn) {
+  const btnText = document.getElementById('loginBtnText');
+  const btn = document.getElementById('loginBtn');
+  
+  if (btnText && btn) {
+    if (isLoggedIn) {
+      btnText.textContent = 'গুগল ড্রাইভে সিঙ্কড ✅';
+      btn.style.background = '#ECFDF5'; // হালকা সবুজ
+    } else {
+      btnText.textContent = 'Google Drive-এ সিঙ্ক করুন';
+      btn.style.background = ''; // ডিফল্ট ব্যাকগ্রাউন্ড
+    }
+  }
+}
+
 // ড্রাইভে ডেটা সেভ করা (আপডেট বা নতুন তৈরি)
 async function saveToDrive() {
-  if (!accessToken) return; // লগইন না থাকলে কিছু করবে না
+  if (!accessToken) return; 
 
   const backupData = {
     home_entries: loadFromStorage('hisaber_khata_home_v1', []),
@@ -74,7 +114,6 @@ async function saveToDrive() {
   };
 
   try {
-    // ১. ড্রাইভে আগে থেকেই কোনো ফাইল আছে কি না খোঁজা
     const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='hisaber_khata_backup.json'`, {
       headers: { 'Authorization': 'Bearer ' + accessToken }
     });
@@ -86,7 +125,6 @@ async function saveToDrive() {
     }
 
     if (fileId) {
-      // ২. আগের ফাইল থাকলে সেটা আপডেট করা
       await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
         method: 'PATCH',
         headers: {
@@ -96,7 +134,6 @@ async function saveToDrive() {
         body: fileContent
       });
     } else {
-      // ৩. আগের ফাইল না থাকলে নতুন ফাইল তৈরি করা
       const boundary = '-------314159265358979323846';
       const delimiter = "\r\n--" + boundary + "\r\n";
       const close_delim = "\r\n--" + boundary + "--";
@@ -119,23 +156,25 @@ async function saveToDrive() {
         body: multipartRequestBody
       });
     }
-    showToast('ড্রাইভে সিঙ্ক সম্পন্ন হয়েছে', 'success');
+    // showToast('ড্রাইভে সিঙ্ক সম্পন্ন হয়েছে', 'success'); // চাইলে আনকমেন্ট করতে পারেন
   } catch (error) {
     console.error('Drive Save Error:', error);
-    showToast('সিঙ্ক করতে সমস্যা হয়েছে', 'error');
+    // টোকেন এক্সপায়ার হলে আবার লগইন করতে বলবে
+    if (error.message.includes('401')) {
+       logoutGoogle();
+    }
   }
 }
 
-// ড্রাইভ থেকে ডেটা লোড করা (লগইন করার পর)
+// ড্রাইভ থেকে ডেটা লোড করা
 async function syncFromDrive() {
+  if (!accessToken) return;
   try {
-    // ১. ফাইল খোঁজা
     const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='hisaber_khata_backup.json'`, {
       headers: { 'Authorization': 'Bearer ' + accessToken }
     });
     const searchData = await searchRes.json();
     
-    // ২. ফাইল পাওয়া গেলে সেটার ডেটা পড়া
     if (searchData.files && searchData.files.length > 0) {
       const fileId = searchData.files[0].id;
       const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
@@ -143,7 +182,6 @@ async function syncFromDrive() {
       });
       const data = await fileRes.json();
       
-      // ৩. লোকাল স্টোরেজে ডেটা আপডেট করা
       if (data.home_entries) saveToStorage('hisaber_khata_home_v1', data.home_entries);
       if (data.home_categories) saveToStorage('hisaber_khata_categories_v1', data.home_categories);
       if (data.shop_entries) saveToStorage('hisaber_khata_shop_v1', data.shop_entries);
@@ -151,13 +189,21 @@ async function syncFromDrive() {
       if (data.goods_entries) saveToStorage('hisaber_khata_goods_v1', data.goods_entries);
 
       showToast('ড্রাইভ থেকে ডেটা লোড হয়েছে', 'success');
-      
-      // ডেটা লোড হওয়ার পর পেজ রিফ্রেশ করা যাতে নতুন ডেটা দেখা যায়
       setTimeout(() => { window.location.reload(); }, 1000);
     } else {
-        showToast('ড্রাইভে কোনো ব্যাকআপ ফাইল পাওয়া যায়নি', 'error');
+      // প্রথমবার লগইন করলে ড্রাইভে ফাইল থাকবে না, তাই নতুন করে সেভ করবে
+      saveToDrive();
     }
   } catch (error) {
     console.error('Drive Load Error:', error);
   }
+}
+
+// লগআউট ফাংশন (ভবিষ্যতে দরকার হতে পারে)
+function logoutGoogle() {
+  localStorage.removeItem('gdrive_access_token');
+  localStorage.removeItem('gdrive_token_expiry');
+  accessToken = null;
+  updateLoginUI(false);
+  showToast('সিঙ্ক বন্ধ করা হয়েছে', 'success');
 }
