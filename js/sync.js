@@ -7,6 +7,7 @@ const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 
 let tokenClient;
 let accessToken = null;
+let isSyncingFromCloud = false; // ক্লাউড থেকে ডেটা আসছে কি না তা ট্র্যাক করার জন্য
 
 // গুগল স্ক্রিপ্ট পুরোপুরি লোড হওয়ার পর এই ফাংশনটি চলবে
 window.addEventListener('load', () => {
