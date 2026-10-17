@@ -137,14 +137,13 @@ function loadFromStorage(key, fallback = null) {
 function saveToStorage(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-    function saveToStorage(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.error('Storage save failed:', e);
-    showToast('ডেটা সেভ করা যায়নি', 'error');
-  }
-}
+    
+    // অটো-সিঙ্ক লজিক (লুপ এড়ানোর জন্য)
+    if (typeof saveToDrive === 'function' && typeof accessToken !== 'undefined' && accessToken) {
+      if (typeof isSyncingFromCloud !== 'undefined' && !isSyncingFromCloud) {
+         saveToDrive();
+      }
+    }
   } catch (e) {
     console.error('Storage save failed:', e);
     showToast('ডেটা সেভ করা যায়নি', 'error');
