@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3A8A" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- App Base (Rounded Square) -->
+  <rect width="512" height="512" rx="120" fill="url(#bgGrad)" filter="url(#shadow)"/>
+  
+  <!-- Book/Paper Style Background -->
+  <rect x="96" y="96" width="320" height="320" rx="40" fill="#FFFFFF"/>
+  
+  <!-- Ledger Lines -->
+  <rect x="150" y="170" width="212" height="14" rx="7" fill="#CBD5E1"/>
+  <rect x="150" y="220" width="180" height="14" rx="7" fill="#CBD5E1"/>
+  <rect x="150" y="270" width="130" height="14" rx="7" fill="#CBD5E1"/>
+  
+  <!-- The Big 'হি' letter in Bengali -->
+  <text x="50%" y="78%" font-size="170" font-family="'Noto Sans Bengali', sans-serif" font-weight="900" fill="#1E3A8A" text-anchor="middle">হ</text>
+  
+  <!-- Accent Element: Taka Symbol Circle -->
+  <circle cx="380" cy="380" r="45" fill="#F59E0B"/>
+  <text x="380" y="400" font-size="55" font-family="sans-serif" font-weight="bold" fill="#FFFFFF" text-anchor="middle">৳</text>
+
+</svg>
