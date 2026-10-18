@@ -1101,24 +1101,54 @@ button { user-select: none; -webkit-user-select: none; }
 }
 
 /* ============ Print CSS (PDF-এর জন্য) ============ */
+
 @media print {
-  body { background: white; }
-  .header, .toolbar, .bottom-tabs, .fab, .selection-bar, .toast, .sheet-overlay, .bottom-sheet, .summary-bar, .home-summary-grid, .shop-summary-grid, .goods-summary-grid {
+  /* স্ক্রিনের সব অপ্রয়োজনীয় জিনিস লুকানো */
+  .header, .toolbar, .bottom-tabs, .fab, .selection-bar, .toast, 
+  .sheet-overlay, .bottom-sheet, .summary-bar, .home-summary-grid, 
+  .shop-summary-grid, .goods-summary-grid, .print-footer, .print-header {
     display: none !important;
   }
-  .app { max-width: 100%; padding: 0; }
-  .screen { padding: 0; }
-  .table-card { border: none; box-shadow: none; }
-  table { min-width: 100%; border-collapse: collapse; }
-  th, td { border: 1px solid #000 !important; padding: 8px; font-size: 12px; color: #000; }
-  th { background: #F1F5F9 !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  
-  /* প্রিন্টে উপরে টাইটেল দেখানোর জন্য */
-  .print-header { display: block !important; text-align: center; margin-bottom: 20px; }
-  .print-header h1 { font-size: 22px; margin-bottom: 5px; color: #000; }
-  .print-header p { font-size: 14px; color: #555; }
-  .print-footer { display: block !important; text-align: center; margin-top: 20px; font-size: 12px; color: #555; }
-}
 
-/* প্রিন্ট হেডার ও ফুটার ডিফল্টভাবে হাইড থাকবে */
-.print-header, .print-footer { display: none; }
+  /* অ্যাপ কন্টেইনার ঠিক করা */
+  body { background: white !important; margin: 0; padding: 0; }
+  .app { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+  .screen { padding: 0 !important; }
+
+  /* টেবিল কার্ডের বর্ডার ও শ্যাডো সরানো */
+  .table-card { border: none !important; box-shadow: none !important; }
+  .table-wrap { overflow: visible !important; }
+
+  /* টেবিল ডিজাইন ঠিক করা */
+  table { width: 100% !important; min-width: 100% !important; border-collapse: collapse !important; }
+  th, td { 
+    border: 1px solid #000 !important; 
+    padding: 8px !important; 
+    font-size: 12px !important; 
+    color: #000 !important; 
+    text-align: left !important;
+    white-space: normal !important; /* লেখা যেন কেটে না যায় */
+  }
+  th { background: #F1F5F9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  
+  /* টেবিলের উপরে একটি সুন্দর হেডার তৈরি করা */
+  .screen::before {
+    content: "হিসাবের খাতা";
+    display: block;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #1E3A8A;
+    margin-bottom: 10px;
+    padding-top: 20px;
+  }
+  
+  .screen::after {
+    content: "রিপোর্টটি তৈরি করা হয়েছে হিসাবের খাতা অ্যাপ থেকে।";
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: #555;
+    margin-top: 30px;
+  }
+}
