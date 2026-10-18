@@ -4,6 +4,7 @@
   "description": "দৈনন্দিন খরচ, দোকানের হিসাব ও মালামাল ক্রয়ের হিসাব",
   "start_url": "./index.html",
   "scope": "./",
+  "authorized_domains": ["badhon117.github.io"],
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F1F5F9",
