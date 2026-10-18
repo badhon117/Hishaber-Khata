@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1E3A8A">
+<title>অ্যাপ সম্পর্কে — হিসাবের খাতা</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="logo.jpg">
+<link rel="stylesheet" href="css/common.css">
+<style>
+  .about-logo {
+    width: 90px;
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px auto;
+  }
+  .about-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 22px;
+    box-shadow: 0 8px 24px rgba(37,99,235,0.2);
+  }
+  .about-header {
+    text-align: center;
+    padding: 30px 20px 20px;
+  }
+  .about-header h1 {
+    font-size: 26px;
+    color: #1E3A8A;
+    font-weight: 800;
+  }
+  .about-header p {
+    color: #64748B;
+    font-size: 14px;
+    margin-top: 5px;
+  }
+  .about-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    margin-bottom: 16px;
+    border: 1px solid #F1F5F9;
+  }
+  .about-card h3 {
+    font-size: 16px;
+    color: #1E3A8A;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .about-card p {
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.7;
+  }
+  .credit-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid #F1F5F9;
+  }
+  .credit-row:last-child { border-bottom: none; }
+  .credit-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .credit-icon.blue { background: #DBEAFE; }
+  .credit-icon.purple { background: #F3E8FF; }
+  .credit-icon.green { background: #D1FAE5; }
+  .credit-text { flex: 1; }
+  .credit-text h4 {
+    font-size: 15px;
+    color: #1E293B;
+    font-weight: 700;
+  }
+  .credit-text p {
+    font-size: 12.5px;
+    color: #64748B;
+    margin-top: 2px;
+  }
+  .version-badge {
+    display: inline-block;
+    background: #F1F5F9;
+    color: #475569;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 10px;
+  }
+  .thank-you {
+    text-align: center;
+    color: #64748B;
+    font-size: 13px;
+    padding: 20px;
+    font-style: italic;
+  }
+  /* Feedback Section */
+.feedback-stars {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  font-size: 32px;
+  margin: 15px 0;
+  cursor: pointer;
+}
+.feedback-stars span {
+  color: #CBD5E1;
+  transition: color 0.2s, transform 0.2s;
+}
+.feedback-stars span.active {
+  color: #F59E0B; /* সোনালী রঙ */
+  transform: scale(1.1);
+}
+.feedback-textarea {
+  width: 100%;
+  height: 90px;
+  padding: 12px;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  margin-bottom: 12px;
+}
+.feedback-textarea:focus {
+  border-color: #2563EB;
+}
+.feedback-btn {
+  width: 100%;
+  padding: 14px;
+  background: #2563EB;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: 0.2s;
+}
+.feedback-btn:active {
+  transform: scale(0.98);
+}
+</style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="js/sync.js"></script>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ========== HEADER ========== -->
+  <div class="header">
+    <button class="back-btn" onclick="goHomePage()">←</button>
+    <h1>অ্যাপ সম্পর্কে</h1>
+  </div>
+
+  <div class="screen">
+    
+    <!-- Logo & Title -->
+    <div class="about-header">
+      <div class="about-logo">
+        <img src="logo.png" alt="হিসাবের খাতা লোগো">
+      </div>
+      <h1>হিসাবের খাতা</h1>
+      <p>আপনার দৈনন্দিন খরচের নির্ভরযোগ্য সঙ্গী</p>
+      <div class="version-badge">সংস্করণ ২.০</div>
+    </div>
+
+    <!-- অ্যাপের বর্ণনা -->
+    <div class="about-card">
+      <h3>📖 অ্যাপটি কী?</h3>
+      <p>এটি একটি সম্পূর্ণ অফলাইন ভিত্তিক ওয়েব অ্যাপ্লিকেশন। এর মাধ্যমে আপনি আপনার <b>বাসার হিসাব, দোকানের হিসাব এবং মালামাল ক্রয়ের হিসাব</b> খুব সহজে রাখতে পারবেন। আপনার সব ডেটা আপনার নিজের ডিভাইসেই সুরক্ষিত থাকে, যা গুগল ড্রাইভের মাধ্যমে একাধিক ডিভাইসে সিঙ্কও করা যায়।</p>
+    </div>
+
+    <!-- রেটিং ও ফিডব্যাক -->
+<div class="about-card">
+  <h3>⭐ রেটিং ও ফিডব্যাক</h3>
+  <p style="text-align:center; margin-bottom: 5px;">আপনার মতামত আমাদের কাছে মূল্যবান।</p>
+  
+  <div class="feedback-stars" id="starContainer">
+    <span onclick="rate(1)">★</span>
+    <span onclick="rate(2)">★</span>
+    <span onclick="rate(3)">★</span>
+    <span onclick="rate(4)">★</span>
+    <span onclick="rate(5)">★</span>
+  </div>
+
+  <textarea class="feedback-textarea" id="feedbackText" placeholder="আপনার মতামত বা কোনো সমস্যার কথা লিখুন..."></textarea>
+  <div style="display:flex; gap:10px; margin-top: 5px;">
+  <button class="feedback-btn" style="background:#25D366; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="sendFeedback('whatsapp')">
+    <span>💬</span> হোয়াটসঅ্যাপে পাঠান
+  </button>
+  <button class="feedback-btn" style="background:#EA4335; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="sendFeedback('email')">
+    <span>✉️</span> ইমেইলে পাঠান
+  </button>
+</div>
+</div>
+    
+    <!-- ডেভেলপার ক্রেডিট -->
+    <div class="about-card">
+      <h3>👨‍💻 ডেভেলপমেন্ট টিম</h3>
+      
+      <div class="credit-row">
+        <div class="credit-icon blue">👤</div>
+        <div class="credit-text">
+          <h4>নিশাত হোসেন বাঁধন</h4>
+          <p>আইডিয়া, ডিজাইন এবং প্রজেক্ট ম্যানেজমেন্ট</p>
+        </div>
+      </div>
+
+      <div class="credit-row">
+        <div class="credit-icon purple">🤖</div>
+        <div class="credit-text">
+          <h4 style="display: flex; align-items: center; gap: 6px;">
+  AI Assistant (DeepSeek) 
+  <svg width="18" height="18" style="flex-shrink: 0;" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 509.64">
+    <path fill="#fff" d="M115.612 0h280.775C459.974 0 512 52.026 512 115.612v278.415c0 63.587-52.026 115.613-115.613 115.613H115.612C52.026 509.64 0 457.614 0 394.027V115.612C0 52.026 52.026 0 115.612 0z"/>
+    <path fill="#4D6BFE" fill-rule="nonzero" d="M440.898 139.167c-4.001-1.961-5.723 1.776-8.062 3.673-.801.612-1.479 1.407-2.154 2.141-5.848 6.246-12.681 10.349-21.607 9.859-13.048-.734-24.192 3.368-34.04 13.348-2.093-12.307-9.048-19.658-19.635-24.37-5.54-2.449-11.141-4.9-15.02-10.227-2.708-3.795-3.447-8.021-4.801-12.185-.861-2.509-1.725-5.082-4.618-5.512-3.139-.49-4.372 2.142-5.601 4.349-4.925 9.002-6.833 18.921-6.647 28.962.432 22.597 9.972 40.597 28.932 53.397 2.154 1.47 2.707 2.939 2.032 5.082-1.293 4.41-2.832 8.695-4.186 13.105-.862 2.817-2.157 3.429-5.172 2.205-10.402-4.346-19.391-10.778-27.332-18.553-13.481-13.044-25.668-27.434-40.873-38.702a177.614 177.614 0 00-10.834-7.409c-15.512-15.063 2.032-27.434 6.094-28.902 4.247-1.532 1.478-6.797-12.251-6.736-13.727.061-26.285 4.653-42.288 10.777-2.34.92-4.801 1.593-7.326 2.142-14.527-2.756-29.608-3.368-45.367-1.593-29.671 3.305-53.368 17.329-70.788 41.272-20.928 28.785-25.854 61.482-19.821 95.59 6.34 35.943 24.683 65.704 52.876 88.974 29.239 24.123 62.911 35.943 101.32 33.677 23.329-1.346 49.307-4.468 78.607-29.27 7.387 3.673 15.142 5.144 28.008 6.246 9.911.92 19.452-.49 26.839-2.019 11.573-2.449 10.773-13.166 6.586-15.124-33.915-15.797-26.47-9.368-33.24-14.573 17.235-20.39 43.213-41.577 53.369-110.222.8-5.448.121-8.877 0-13.287-.061-2.692.553-3.734 3.632-4.041 8.494-.981 16.742-3.305 24.314-7.471 21.975-12.002 30.84-31.719 32.933-55.355.307-3.612-.061-7.348-3.879-9.245v-.003zM249.4 351.89c-32.872-25.838-48.814-34.352-55.4-33.984-6.155.368-5.048 7.41-3.694 12.002 1.415 4.532 3.264 7.654 5.848 11.634 1.785 2.634 3.017 6.551-1.784 9.493-10.587 6.55-28.993-2.205-29.856-2.635-21.421-12.614-39.334-29.269-51.954-52.047-12.187-21.924-19.267-45.435-20.435-70.542-.308-6.061 1.478-8.207 7.509-9.307 7.94-1.471 16.127-1.778 24.068-.615 33.547 4.9 62.108 19.902 86.054 43.66 13.666 13.531 24.007 29.699 34.658 45.496 11.326 16.778 23.514 32.761 39.026 45.865 5.479 4.592 9.848 8.083 14.035 10.656-12.62 1.407-33.673 1.714-48.075-9.676zm15.899-102.519c.521-2.111 2.421-3.658 4.722-3.658a4.74 4.74 0 011.661.305c.678.246 1.293.614 1.786 1.163.861.859 1.354 2.083 1.354 3.368 0 2.695-2.154 4.837-4.862 4.837a4.748 4.748 0 01-4.738-4.034 5.01 5.01 0 01.077-1.981zm47.208 26.915c-2.606.996-5.2 1.778-7.707 1.88-4.679.244-9.787-1.654-12.556-3.981-4.308-3.612-7.386-5.631-8.679-11.941-.554-2.695-.247-6.858.246-9.246 1.108-5.144-.124-8.451-3.754-11.451-2.954-2.449-6.711-3.122-10.834-3.122-1.539 0-2.954-.673-4.001-1.224-1.724-.856-3.139-3-1.785-5.634.432-.856 2.525-2.939 3.018-3.305 5.6-3.185 12.065-2.144 18.034.244 5.54 2.266 9.727 6.429 15.759 12.307 6.155 7.102 7.263 9.063 10.773 14.39 2.771 4.163 5.294 8.451 7.018 13.348.877 2.561.071 4.74-2.341 6.277-.981.625-2.109 1.044-3.191 1.458z"/>
+  </svg>
+</h4>
+          <p>কোডিং, লজিক এবং টেকনিক্যাল সাপোর্ট</p>
+        </div>
+      </div>
+
+      <div class="credit-row">
+        <div class="credit-icon green">☁️</div>
+        <div class="credit-text">
+          <h4>Google Cloud & GitHub</h4>
+          <p>হোস্টিং এবং ক্লাউড সিঙ্ক সার্ভিস</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- উৎসর্গ সেকশন -->
+<div style="text-align: center; margin: 24px 0 12px 0; padding: 18px 16px; background: #F8FAFC; border-radius: 16px; border: 1px dashed #CBD5E1;">
+  <div style="font-size: 15px; font-weight: 800; color: #1E3A8A; margin-bottom: 8px;">
+    ❤️ উৎসর্গ
+  </div>
+  <p style="font-size: 13.5px; color: #334155; line-height: 1.6; font-weight: 500; margin: 0;">
+    আমার বাবা-মা ও আদরের বোনদের প্রতি—<br>
+    <span style="color: #64748B; font-size: 13px;">আমার ভালোবাসা, আমার প্রেরণা, আমার পথচলার শক্তি।</span>
+  </p>
+  <p style="font-size: 12.5px; color: #475569; font-style: italic; margin-top: 8px;">
+    "ভালোবাসা ও কৃতজ্ঞতায় তাঁদেরই উৎসর্গে আমার এই ক্ষুদ্র প্রয়াস।"
+  </p>
+</div>
+
+
+    <!-- ধন্যবাদ -->
+    <div class="thank-you">
+      "আমাদের এই ছোট্ট প্রয়াসে আপনাদের পাশে পেয়ে আমরা কৃতজ্ঞ। 
+      ধন্যবাদ অ্যাপটি ব্যবহার করার জন্য! ❤️"
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== TOAST ========== -->
+<div class="toast" id="toast"></div>
+
+<script src="js/common.js"></script>
+  <script>
+  let currentRating = 0;
+
+  function rate(stars) {
+    currentRating = stars;
+    const starEls = document.querySelectorAll('#starContainer span');
+    starEls.forEach((el, index) => {
+      if (index < stars) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
+  }
+
+  function sendFeedback(method) {
+    if (currentRating === 0) {
+      showToast('অনুগ্রহ করে স্টার রেটিং দিন', 'error');
+      return;
+    }
+
+    const text = document.getElementById('feedbackText').value.trim();
+    const message = "হিসাবের খাতা অ্যাপের ফিডব্যাক\n\n" +
+                    "রেটিং: " + currentRating + " স্টার\n\n" +
+                    "মতামত: " + (text || "কোনো মন্তব্য লেখা হয়নি।");
+
+    if (method === 'whatsapp') {
+      // 🚨 এখানে আপনার হোয়াটসঅ্যাপ নাম্বার দিন (কান্ট্রি কোড ৮৮ সহ, যেমন: 88017XXXXXXXX)
+      const yourWhatsAppNumber = "8801709342843"; 
+      const whatsappLink = `https://wa.me/${yourWhatsAppNumber}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappLink, '_blank');
+    } 
+    else if (method === 'email') {
+      // 🚨 এখানে আপনার ইমেইল অ্যাড্রেস দিন
+      const yourEmail = "nishatbadhon117@gmail.com.com";
+      const subject = encodeURIComponent("Hisaber Khata App Feedback (" + currentRating + " Stars)");
+      const body = encodeURIComponent(message);
+      const mailtoLink = `mailto:${yourEmail}?subject=${subject}&body=${body}`;
+      window.location.href = mailtoLink;
+    }
+    
+    // ফিডব্যাক পাঠানোর পর ফর্ম রিসেট
+    setTimeout(() => {
+      currentRating = 0;
+      document.querySelectorAll('#starContainer span').forEach(el => el.classList.remove('active'));
+      document.getElementById('feedbackText').value = '';
+    }, 1000);
+  }
+</script>
+</body>
+</html>
