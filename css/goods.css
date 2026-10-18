@@ -1,0 +1,88 @@
+/* ============================================================
+   হিসাবের খাতা — Goods (মালামাল ক্রয়ের হিসাব) Specific Styles
+   শুধু মালামাল ক্রয়ে ব্যবহার হবে (Teal Theme)
+   ============================================================ */
+
+/* ============ ২x২ Summary Grid ============ */
+.goods-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.goods-summary-box {
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+}
+.goods-summary-box .gs-label {
+  font-size: 11px;
+  opacity: 0.9;
+  font-weight: 500;
+  margin-bottom: 5px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.goods-summary-box .gs-value {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.goods-summary-box.gs-purchase {
+  background: linear-gradient(135deg, #0F766E, #14B8A6);
+}
+.goods-summary-box.gs-cost {
+  background: linear-gradient(135deg, #991B1B, #DC2626);
+}
+.goods-summary-box.gs-due {
+  background: linear-gradient(135deg, #C2410C, #F97316);
+}
+.goods-summary-box.gs-paid {
+  background: linear-gradient(135deg, #047857, #10B981);
+}
+
+/* ============ Table special cells ============ */
+td.shopname-cell {
+  font-weight: 600;
+  color: #0F766E;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+td.due-cell {
+  color: #EA580C;
+  font-weight: 600;
+  text-align: right;
+}
+td.paid-cell {
+  color: #059669;
+  font-weight: 600;
+  text-align: right;
+}
+td.cost-cell {
+  color: #DC2626;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ============ Mobile responsiveness ============ */
+@media (max-width: 400px) {
+  .goods-summary-box {
+    padding: 12px 10px;
+  }
+  .goods-summary-box .gs-value {
+    font-size: 15px;
+  }
+  .goods-summary-box .gs-label {
+    font-size: 10.5px;
+  }
+}

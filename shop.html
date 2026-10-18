@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#047857">
+<title>দোকানের হিসাব — হিসাবের খাতা</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/shop.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="js/sync.js"></script>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ========== HEADER ========== -->
+  <div class="header" style="background:linear-gradient(135deg,#047857 0%,#10B981 100%);box-shadow:0 2px 12px rgba(4,120,87,0.2);">
+    <button class="back-btn" onclick="goHomePage()">←</button>
+    <h1>দোকানের হিসাব</h1>
+  </div>
+
+  <!-- ========== FORM TAB ========== -->
+  <div id="formTab" class="screen" style="padding-bottom:100px;">
+    <div class="form-card">
+      <h2>
+        <span id="formTitle">নতুন এন্ট্রি যোগ করুন</span>
+        <span id="editBadge" class="edit-badge" style="display:none;">এডিট মোড</span>
+      </h2>
+
+      <input type="hidden" id="editId">
+
+      <div class="form-group">
+        <label>তারিখ <span class="req">*</span></label>
+        <input type="date" id="fDate">
+        <div class="date-bn" id="dateBn"></div>
+      </div>
+
+      <div class="form-group">
+        <label>দোকানের নাম <span class="req">*</span></label>
+        <div class="shop-picker">
+          <button type="button" class="shop-trigger placeholder" id="shopTrigger" onclick="toggleShopPanel(event)">
+            <span id="shopTriggerText">-- নির্বাচন করুন --</span>
+            <span class="arrow">▼</span>
+          </button>
+          <div class="shop-panel" id="shopPanel">
+            <input type="text" class="shop-search" id="shopSearch" placeholder="🔍 খুঁজুন..." oninput="renderShopList()">
+            <div class="shop-list" id="shopList"></div>
+            <div class="shop-add">
+              <button type="button" class="shop-add-btn" id="shopAddBtn" onclick="showAddShopForm(event)">
+                ➕ নতুন দোকান যোগ করুন
+              </button>
+              <div class="shop-add-form" id="shopAddForm">
+                <input type="text" id="shopNewInput" placeholder="নতুন দোকানের নাম" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewShop();}">
+                <button type="button" class="ok" onclick="addNewShop()">যোগ</button>
+                <button type="button" class="no" onclick="hideAddShopForm(event)">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>ক্রয়কারীর নাম <span class="req">*</span></label>
+        <input type="text" id="fCustomer" placeholder="ক্রেতার নাম লিখুন">
+      </div>
+
+      <div class="form-group">
+        <label>বিবরণ <span class="opt">(ঐচ্ছিক)</span></label>
+        <input type="text" id="fDescription" placeholder="সংক্ষিপ্ত বিবরণ লিখুন">
+      </div>
+
+      <div class="form-group">
+        <label>মূল্য</label>
+        <input type="number" id="fPrice" placeholder="0" min="0" step="0.01" inputmode="decimal">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>নগদ</label>
+          <input type="number" id="fCash" placeholder="0" min="0" step="0.01" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label>বাকি</label>
+          <input type="number" id="fDue" placeholder="0" min="0" step="0.01" inputmode="decimal">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>বাকি প্রাপ্ত</label>
+          <input type="number" id="fReceived" placeholder="0" min="0" step="0.01" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label>খরচ</label>
+          <input type="number" id="fCost" placeholder="0" min="0" step="0.01" inputmode="decimal">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>মন্তব্য <span class="opt">(ঐচ্ছিক)</span></label>
+        <textarea id="fNote" placeholder="অতিরিক্ত মন্তব্য"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-cancel" onclick="cancelForm()">Cancel</button>
+        <button class="btn btn-save" onclick="saveEntry()" style="background:#059669;">Save</button>
+        <button class="btn btn-delete" id="deleteBtn" onclick="deleteCurrent()" style="display:none;">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== STATISTICS TAB ========== -->
+  <div id="statsTab" class="screen hidden" style="padding-bottom:100px;">
+
+    <div class="selection-bar" id="selectionBar" style="background:#047857;">
+      <div class="count" id="selCount">০টি নির্বাচিত</div>
+      <button class="select-all" onclick="toggleSelectAll()">সব</button>
+      <button onclick="exitSelectMode()">Cancel</button>
+      <button class="danger" onclick="deleteSelected()">Delete</button>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" class="search-box" id="searchBox" placeholder="🔍 ক্রেতা, বিবরণ বা মন্তব্য খুঁজুন..." oninput="renderTable()">
+
+      <div class="toolbar-row">
+        <button class="tool-btn" id="filterBtn" onclick="toggleDropdownPanel('filterPanel','filterBtn')">▼ ফিল্টার</button>
+        <button class="tool-btn" id="sortBtn" onclick="toggleDropdownPanel('sortPanel','sortBtn')">↕ সর্ট</button>
+        <button class="tool-btn export" onclick="openExportSheet()">📥 এক্সপোর্ট</button>
+        <button class="tool-btn select" id="selectBtn" onclick="enterSelectMode()">☑ Select</button>
+      </div>
+
+      <div class="dropdown-panel" id="filterPanel">
+        <h4>মাস ফিল্টার</h4>
+        <select id="filterMonth" onchange="renderTable()">
+          <option value="">সব মাস</option>
+        </select>
+
+        <h4 style="margin-top:10px;">দোকান</h4>
+        <select id="filterShop" onchange="renderTable()">
+          <option value="">সব দোকান</option>
+        </select>
+
+        <h4 style="margin-top:10px;">ক্রয়কারীর নাম</h4>
+        <input type="text" id="filterCustomer" placeholder="নাম লিখুন..." oninput="renderTable()">
+
+        <div class="checkbox-row" style="margin-top:8px;">
+          <input type="checkbox" id="filterDuplicate" onchange="renderTable()">
+          <label for="filterDuplicate" style="cursor:pointer;font-size:13.5px;">শুধু ডুপ্লিকেট ক্রেতা দেখান</label>
+        </div>
+      </div>
+
+      <div class="dropdown-panel" id="sortPanel">
+        <h4>সর্ট করুন</h4>
+        <select id="sortBy" onchange="renderTable()">
+          <option value="date-desc">তারিখ (নতুন → পুরনো)</option>
+          <option value="date-asc">তারিখ (পুরনো → নতুন)</option>
+          <option value="price-desc">মূল্য (বেশি → কম)</option>
+          <option value="price-asc">মূল্য (কম → বেশি)</option>
+          <option value="due-desc">বাকি (বেশি → কম)</option>
+          <option value="customer">ক্রয়কারীর নাম</option>
+          <option value="shop">দোকানের নাম</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SUMMARY GRID (2x2) -->
+    <div class="shop-summary-grid">
+      <div class="shop-summary-box ss-sales">
+        <div class="ss-label" id="labelSales">মোট বিক্রয়</div>
+        <div class="ss-value" id="sumSales">৳০</div>
+      </div>
+      <div class="shop-summary-box ss-due">
+        <div class="ss-label" id="labelDue">মোট বাকি</div>
+        <div class="ss-value" id="sumDue">৳০</div>
+      </div>
+      <div class="shop-summary-box ss-paid">
+        <div class="ss-label" id="labelReceived">মোট বাকি প্রাপ্ত</div>
+        <div class="ss-value" id="sumReceived">৳০</div>
+      </div>
+      <div class="shop-summary-box ss-cost">
+        <div class="ss-label" id="labelCost">মোট খরচ</div>
+        <div class="ss-value" id="sumCost">৳০</div>
+      </div>
+    </div>
+	
+	<div class="print-page-header" id="printHeaderText">দোকানের হিসাব | হিসাবের খাতা</div>
+	    <!-- চার্ট দেখার বাটন -->
+    <div style="text-align: right; margin-bottom: 10px;" class="chartModal">
+      <button onclick="openChartModal()" style="background: #047857; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit;">
+        📊 চার্ট দেখুন
+      </button>
+    </div>
+
+    <!-- চার্টের জন্য মডাল (পপআপ) -->
+    <div id="chartModal" class="chartModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px;">
+      <div style="background: white; border-radius: 16px; padding: 20px; width: 100%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="margin: 0; color: #047857; font-size: 16px;">দোকান অনুযায়ী বিক্রয়</h3>
+          <button onclick="closeChartModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748B;">✕</button>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <select id="chartMonth" onchange="renderChart()" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #CBD5E1; font-family: inherit;">
+            <option value="">-- মাস --</option>
+          </select>
+          <select id="chartYear" onchange="renderChart()" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #CBD5E1; font-family: inherit;">
+            <option value="">-- বছর --</option>
+          </select>
+        </div>
+
+        <div style="position: relative; height: 300px; width: 100%;">
+          <canvas id="myChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr id="tableHead">
+              <th>তারিখ</th>
+              <th>দোকান</th>
+              <th>ক্রয়কারী</th>
+              <th>বিবরণ</th>
+              <th style="text-align:right;">মূল্য</th>
+              <th style="text-align:right;">নগদ</th>
+              <th style="text-align:right;">বাকি</th>
+              <th style="text-align:right;">বাকি প্রাপ্ত</th>
+              <th style="text-align:right;">খরচ</th>
+              <th>মন্তব্য</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState">
+        <div class="icon">📋</div>
+        <p>এখনো কোনো ডেটা যোগ করা হয়নি</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== FAB + BOTTOM TABS ========== -->
+  <button class="fab" id="fabBtn" onclick="fabNewEntry()" style="background:#059669;">+</button>
+
+  <div class="bottom-tabs">
+    <button class="tab-btn active" id="tabForm" onclick="switchTab('form')">দোকানের হিসাব</button>
+    <button class="tab-btn" id="tabStats" onclick="switchTab('stats')">Statistics</button>
+  </div>
+
+</div>
+
+<!-- ========== TOAST ========== -->
+<div class="toast" id="toast"></div>
+
+<!-- ========== EXPORT BOTTOM SHEET ========== -->
+<div class="sheet-overlay" id="exportOverlay" onclick="closeExportSheet()"></div>
+<div class="bottom-sheet" id="exportSheet">
+  <div class="sheet-drag"></div>
+  <div class="sheet-title">ফাইল এক্সপোর্ট করুন</div>
+  
+  <div class="sheet-options" style="justify-content: center; gap: 20px;">
+    <button class="sheet-btn" onclick="exportPDF()" style="flex: 0 1 120px;">
+      <span class="icon">📄</span>
+      <span class="text">PDF</span>
+    </button>
+    <button class="sheet-btn" onclick="exportCSV()" style="flex: 0 1 120px;">
+      <span class="icon">📊</span>
+      <span class="text">CSV</span>
+    </button>
+  </div>
+  
+  <button class="sheet-cancel" onclick="closeExportSheet()">বাতিল করুন</button>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/shop.js"></script>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- ========== THEME MODAL ========== -->
+<div class="theme-modal-overlay" id="themeModalOverlay" onclick="if(event.target === this) closeThemeModal()">
+  <div class="theme-modal">
+    <h3>🎨 থিম পরিবর্তন করুন</h3>
+    
+    <button class="theme-option" data-theme="light" onclick="setTheme('light')">
+      <span class="icon">☀️</span> লাইট মোড (সাদা)
+    </button>
+    
+    <button class="theme-option" data-theme="dark" onclick="setTheme('dark')">
+      <span class="icon">🌙</span> ডার্ক মোড (গাঢ়)
+    </button>
+    
+    <button class="theme-option" data-theme="amoled" onclick="setTheme('amoled')">
+      <span class="icon">🌑</span> অ্যামোলেড (একদম কালো)
+    </button>
+    
+    <button class="sheet-cancel" onclick="closeThemeModal()" style="margin-top: 15px;">বাতিল করুন</button>
+  </div>
+</div>
+</body>
+</html>
