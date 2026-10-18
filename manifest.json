@@ -3,6 +3,7 @@
   "short_name": "হিসাব",
   "description": "দৈনন্দিন খরচ, দোকানের হিসাব ও মালামাল ক্রয়ের হিসাব",
   "start_url": "./index.html",
+  "authorized_domains": ["badhon117.github.io"],
   "scope": "./",
   "authorized_domains": ["badhon117.github.io"],
   "display": "standalone",
