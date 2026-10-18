@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hisaber-khata-v4';
+const CACHE_NAME = 'hisaber-khata-v5';
 const ASSETS = [
   './',
   './index.html',
