@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hishaber-khata-v3';
+const CACHE_NAME = 'hishaber-khata-v4';
 
 const ASSETS_TO_CACHE = [
   './',
@@ -18,8 +18,7 @@ const ASSETS_TO_CACHE = [
   './js/goods.js',
   './js/sync.js',
   './manifest.json',
-  './logo.png',
-  './icon.svg'
+  './logo.png'
 ];
 
 self.addEventListener('install', (event) => {
