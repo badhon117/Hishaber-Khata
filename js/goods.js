@@ -1,5 +1,5 @@
 /* ============================================================
-   হিসাবের খাতা — Goods (মালামাল ক্রয়ের হিসাব) Module
+   হিসাবের খাতা — Goods (মালামাল ক্রয়ের হিসাব) Module (Secured & Updated)
    ============================================================ */
 
 /* ---------- Storage Keys ---------- */
@@ -19,7 +19,10 @@ function loadData() {
 }
 
 function saveData() {
-  saveToStorage(STORAGE_KEY, entries);
+  const success = saveToStorage(STORAGE_KEY, entries);
+  if (!success) {
+    throw new Error('STORAGE_WRITE_FAILED');
+  }
 }
 
 /* ============================================================
@@ -112,19 +115,20 @@ function updateDateBn() {
 }
 
 /* ---------- Save / Delete ---------- */
-// 🆕 Save করার আগে সব ম্যাথ ফিল্ড evaluate করি
-function evaluateAllMathFields() {
-  const ids = ['fAmount', 'fCash', 'fBkash', 'fPrice', 'fDue', 'fReceived', 'fCost', 'fPaid'];
-  ids.forEach(id => {
+function saveEntry() {
+  // ১. সব ম্যাথ ফিল্ড আগে evaluate ও validate করি
+  const ids = ['fPrice', 'fCash', 'fDue', 'fPaid', 'fCost'];
+  for (const id of ids) {
     const el = document.getElementById(id);
     if (el && typeof evaluateMathField === 'function') {
-      evaluateMathField(el);
+      const isValid = evaluateMathField(el);
+      if (!isValid) {
+        el.focus();
+        return;
+      }
     }
-  });
-}
+  }
 
-function saveEntry() {
-	evaluateAllMathFields();   // 🆕
   const id = document.getElementById('editId').value;
   const date = document.getElementById('fDate').value;
   const shopName = document.getElementById('fShopName').value.trim();
@@ -138,26 +142,42 @@ function saveEntry() {
 
   if (!date) { showToast('তারিখ দিন', 'error'); return; }
   if (!shopName) { showToast('দোকানের নাম লিখুন', 'error'); return; }
-  if (!price || price <= 0) { showToast('সঠিক মূল্য দিন', 'error'); return; }
-
-  if (id) {
-    const idx = entries.findIndex(x => x.id === id);
-    if (idx >= 0) {
-      entries[idx] = { ...entries[idx], date, shopName, description, price, cash, due, paid, cost, note };
-      showToast('আপডেট হয়েছে', 'success');
-    }
-  } else {
-    entries.push({
-      id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-      date, shopName, description, price, cash, due, paid, cost, note,
-      createdAt: Date.now()
-    });
-    showToast('সেভ হয়েছে', 'success');
-	incrementEntryCount();  // 🆕 এই লাইন
+  
+  // আর্থিক মানের বৈধতা পরীক্ষা (ঋণাত্মক হতে পারবে না)
+  if (price < 0 || cash < 0 || due < 0 || paid < 0 || cost < 0) {
+    showToast('আর্থিক পরিমাণ ঋণাত্মক হতে পারে না', 'error');
+    return;
   }
-  saveData();
-  startNewEntry();
-  renderMonthOptions();
+
+  if (price <= 0) { 
+    showToast('সঠিক মূল্য দিন', 'error'); 
+    return; 
+  }
+
+  try {
+    if (id) {
+      const idx = entries.findIndex(x => x.id === id);
+      if (idx >= 0) {
+        entries[idx] = { ...entries[idx], date, shopName, description, price, cash, due, paid, cost, note };
+        saveData();
+        showToast('আপডেট হয়েছে', 'success');
+      }
+    } else {
+      entries.push({
+        id: 'g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        date, shopName, description, price, cash, due, paid, cost, note,
+        createdAt: Date.now()
+      });
+      saveData();
+      showToast('সেভ হয়েছে', 'success');
+      incrementEntryCount();
+    }
+    startNewEntry();
+    renderMonthOptions();
+  } catch (err) {
+    console.error('Save goods entry failed:', err);
+    showToast('ডেটা সেভ করা যায়নি। স্টোরেজ পূর্ণ থাকতে পারে।', 'error');
+  }
 }
 
 function deleteCurrent() {
@@ -292,7 +312,6 @@ function refreshShopNameDropdowns() {
   if (!sel) return;
   const current = sel.value;
 
-  // সব ইউনিক দোকানের নাম বের করি
   const shopNames = new Set();
   entries.forEach(e => {
     const s = (e.shopName || '').trim();
@@ -391,7 +410,6 @@ function updateSummary(list) {
   if (elDue) elDue.textContent = formatTaka(due);
   if (elPaid) elPaid.textContent = formatTaka(paid);
 
-  // Label আপডেট
   const lPurchase = document.getElementById('labelPurchase');
   const lCost = document.getElementById('labelCost');
   const lDue = document.getElementById('labelDue');
@@ -436,6 +454,7 @@ function exportCSV() {
   URL.revokeObjectURL(url);
   showToast('CSV ডাউনলোড হয়েছে', 'success');
 }
+
 /* ============================================================
    Chart Logic (Goods)
    ============================================================ */
@@ -496,7 +515,6 @@ function renderChart() {
 
   const filtered = entries.filter(e => e.date.startsWith(`${year}-${month}`));
   
-  // দোকান অনুযায়ী ৪টি ডেটা গ্রুপ করা
   const shopData = {};
   filtered.forEach(e => {
     const shop = e.shopName || 'অন্যান্য';
@@ -509,7 +527,7 @@ function renderChart() {
     shopData[shop].cost += (Number(e.cost) || 0);
   });
 
-  const labels = Object.keys(shopData); // দোকানের নাম
+  const labels = Object.keys(shopData);
   
   const purchaseData = labels.map(s => shopData[s].purchase);
   const dueData = labels.map(s => shopData[s].due);
@@ -522,7 +540,6 @@ function renderChart() {
 
   const ctx = document.getElementById('myChart').getContext('2d');
   
-  // যদি কোনো ডেটা না থাকে
   if (labels.length === 0) {
     chartInstance = new Chart(ctx, {
       type: 'bar',
@@ -535,7 +552,6 @@ function renderChart() {
     return;
   }
 
-  // ৪টি বার-সহ গ্রুপড চার্ট তৈরি
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -544,7 +560,7 @@ function renderChart() {
         {
           label: 'মোট ক্রয়',
           data: purchaseData,
-          backgroundColor: '#0F766E', // টিল
+          backgroundColor: '#0F766E',
           borderRadius: 4,
           barPercentage: 0.6,
           categoryPercentage: 0.7
@@ -552,7 +568,7 @@ function renderChart() {
         {
           label: 'মোট বাকি',
           data: dueData,
-          backgroundColor: '#F97316', // কমলা
+          backgroundColor: '#F97316',
           borderRadius: 4,
           barPercentage: 0.6,
           categoryPercentage: 0.7
@@ -560,7 +576,7 @@ function renderChart() {
         {
           label: 'মোট বাকি প্রদান',
           data: paidData,
-          backgroundColor: '#10B981', // সবুজ
+          backgroundColor: '#10B981',
           borderRadius: 4,
           barPercentage: 0.6,
           categoryPercentage: 0.7
@@ -568,7 +584,7 @@ function renderChart() {
         {
           label: 'মোট খরচ',
           data: costData,
-          backgroundColor: '#DC2626', // লাল
+          backgroundColor: '#DC2626',
           borderRadius: 4,
           barPercentage: 0.6,
           categoryPercentage: 0.7

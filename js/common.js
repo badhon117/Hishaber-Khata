@@ -1,5 +1,5 @@
 /* ============================================================
-   হিসাবের খাতা — Common JavaScript
+   হিসাবের খাতা — Common JavaScript (Updated & Secured)
    ============================================================ */
 
 const BN_DIGITS = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
@@ -46,18 +46,23 @@ function loadFromStorage(key, fallback = null) {
     return parsed === null ? fallback : parsed;
   } catch (e) { return fallback; }
 }
+
+// 🔒 ফিক্স ৪: saveToStorage এখন সফল হলে true এবং ব্যর্থ হলে false রিটার্ন করবে[cite: 27, 28]
 function saveToStorage(key, value) {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
-    
-    // 🆕 অটো-সিঙ্ক বন্ধ করা হলো (শুধু ম্যানুয়ালি সিঙ্ক হবে)
-    // ইউজার নিজে "সিঙ্ক" বাটনে ক্লিক করলে তবেই ক্লাউডে যাবে।
-    
+    const serialized = JSON.stringify(value);
+    if (serialized === undefined) {
+      throw new Error('Data cannot be serialized');
+    }
+    localStorage.setItem(key, serialized);
+    return true;
   } catch (e) {
-    console.error('Storage save failed:', e);
-    showToast('ডেটা সেভ করা যায়নি', 'error');
+    console.error('Storage save failed:', key, e);
+    showToast('ডেটা সেভ করা যায়নি। স্টোরেজের জায়গা পরীক্ষা করুন।', 'error');
+    return false;
   }
 }
+
 let _toastTimer = null;
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
@@ -115,7 +120,7 @@ function downloadBackup() {
       home_categories: loadFromStorage('hisaber_khata_categories_v1', []),
       shop_entries: loadFromStorage('hisaber_khata_shop_v1', []),
       shop_shops: loadFromStorage('hisaber_khata_shops_v1', []),
-	  shop_sellers: loadFromStorage('hisaber_khata_sellers_v1', []),   // 🆕
+	  shop_sellers: loadFromStorage('hisaber_khata_sellers_v1', []),
       goods_entries: loadFromStorage('hisaber_khata_goods_v1', [])
     }
   };
@@ -136,25 +141,120 @@ function triggerRestore() {
   if (input) { input.value = ''; input.click(); }
 }
 
+// 🔒 ফিক্স ১: নিরাপদ ব্যাকআপ রিস্টোর (কাঠামো ও সাইজ যাচাই এবং রোলব্যাক সুবিধা সহ)[cite: 17, 18, 20]
 function handleRestoreFile(event) {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
+
+  const MAX_BACKUP_SIZE = 20 * 1024 * 1024; // ২০ MB লিমিট
+  if (file.size > MAX_BACKUP_SIZE) {
+    showToast('ব্যাকআপ ফাইলটি অনেক বড় (সর্বোচ্চ ২০ MB)', 'error');
+    event.target.value = '';
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = function (e) {
     try {
       const backup = JSON.parse(e.target.result);
-      if (!backup || !backup.data) { showToast('ফাইলটি সঠিক নয়', 'error'); return; }
+
+      if (
+        !backup ||
+        backup.app !== 'হিসাবের খাতা' ||
+        !backup.data ||
+        typeof backup.data !== 'object' ||
+        Array.isArray(backup.data)
+      ) {
+        throw new Error('INVALID_BACKUP');
+      }
+
       const d = backup.data;
-      if (Array.isArray(d.home_entries)) saveToStorage('hisaber_khata_home_v1', d.home_entries);
-      if (Array.isArray(d.home_categories)) saveToStorage('hisaber_khata_categories_v1', d.home_categories);
-      if (Array.isArray(d.shop_entries)) saveToStorage('hisaber_khata_shop_v1', d.shop_entries);
-      if (Array.isArray(d.shop_shops)) saveToStorage('hisaber_khata_shops_v1', d.shop_shops);
-       if (Array.isArray(d.shop_sellers)) saveToStorage('hisaber_khata_sellers_v1', d.shop_sellers);   // 🆕
-	  if (Array.isArray(d.goods_entries)) saveToStorage('hisaber_khata_goods_v1', d.goods_entries);
-      showToast('সফলভাবে রিস্টোর হয়েছে', 'success');
+      const keys = [
+        'home_entries',
+        'home_categories',
+        'shop_entries',
+        'shop_shops',
+        'shop_sellers',
+        'goods_entries'
+      ];
+
+      const normalized = {};
+      for (const key of keys) {
+        if (d[key] === undefined) {
+          normalized[key] = [];
+        } else if (Array.isArray(d[key])) {
+          normalized[key] = d[key];
+        } else {
+          throw new Error('INVALID_ARRAY: ' + key);
+        }
+      }
+
+      const entryKeys = ['home_entries', 'shop_entries', 'goods_entries'];
+      for (const key of entryKeys) {
+        for (const entry of normalized[key]) {
+          if (
+            !entry ||
+            typeof entry !== 'object' ||
+            Array.isArray(entry) ||
+            typeof entry.id !== 'string' ||
+            !entry.id.trim()
+          ) {
+            throw new Error('INVALID_ENTRY: ' + key);
+          }
+        }
+      }
+
+      const storageMap = {
+        home_entries: 'hisaber_khata_home_v1',
+        home_categories: 'hisaber_khata_categories_v1',
+        shop_entries: 'hisaber_khata_shop_v1',
+        shop_shops: 'hisaber_khata_shops_v1',
+        shop_sellers: 'hisaber_khata_sellers_v1',
+        goods_entries: 'hisaber_khata_goods_v1'
+      };
+
+      // পরিবর্তনের আগে পুরোনো ডেটা সংরক্ষণ (Rollback snapshot)
+      const previous = {};
+      for (const key of keys) {
+        previous[key] = localStorage.getItem(storageMap[key]);
+      }
+
+      try {
+        for (const key of keys) {
+          localStorage.setItem(storageMap[key], JSON.stringify(normalized[key]));
+        }
+      } catch (writeError) {
+        // ফেইল করলে আগের ডেটা ফিরিয়ে আনা (Rollback)
+        for (const key of keys) {
+          try {
+            if (previous[key] === null) {
+              localStorage.removeItem(storageMap[key]);
+            } else {
+              localStorage.setItem(storageMap[key], previous[key]);
+            }
+          } catch (rollbackError) {
+            console.error('Restore rollback failed:', key, rollbackError);
+          }
+        }
+        throw new Error('STORAGE_WRITE_FAILED');
+      }
+
+      showToast('ব্যাকআপ সফলভাবে রিস্টোর হয়েছে', 'success');
       setTimeout(() => { window.location.reload(); }, 1200);
-    } catch (err) { showToast('ফাইল পড়া যায়নি', 'error'); }
+
+    } catch (err) {
+      console.error('Backup restore failed:', err);
+      showToast('ব্যাকআপ ফাইল ভুল বা করাপ্টed। বর্তমান ডেটা অক্ষত আছে।', 'error');
+    } finally {
+      event.target.value = '';
+    }
   };
+
+  reader.onerror = function () {
+    showToast('ব্যাকআপ ফাইল পড়া যায়নি', 'error');
+    event.target.value = '';
+  };
+
   reader.readAsText(file);
 }
 
@@ -162,15 +262,10 @@ let deferredInstallPrompt = null;
 const INSTALL_DISMISSED = 'hisaber_install_dismissed';
 const INSTALL_LATER = 'hisaber_install_later';
 const INSTALL_NOTIFIED = 'hisaber_install_notified';
-function updateInstallButtons() {
-  // এই ফাংশনটি প্রতিবার পেজ লোডে কল হয়।
-  // ভবিষ্যতে ইনস্টল বাটনের UI আপডেট লাগলে এখানে কোড লিখব।
-  // এখন শুধু খালি রাখছি যাতে undefined error না আসে।
-}
+function updateInstallButtons() {}
 
 function handleInstallClick() {
   if (deferredInstallPrompt) {
-    // ব্রাউজারের আসল install prompt দেখাও
     deferredInstallPrompt.prompt();
     deferredInstallPrompt.userChoice.then((choiceResult) => {
       if (choiceResult.outcome === 'accepted') {
@@ -179,8 +274,6 @@ function handleInstallClick() {
       deferredInstallPrompt = null;
     });
   } else {
-    // ব্রাউজার সাপোর্ট না করলে বা আগেই ইনস্টল করা থাকলে
-    // ম্যানুয়াল ইনস্টল গাইড দেখাও
     showIOSInstallModal();
   }
 }
@@ -247,50 +340,33 @@ function closeExportSheet() {
 }
 function exportPDF() {
   closeExportSheet();
-  
-  // ব্রাউজারের ডিফল্ট হেডার (তারিখ, URL) বন্ধ করার ট্রিক
   const originalTitle = document.title;
   document.title = ""; 
-
   setTimeout(() => {
     window.print();
-    
-    setTimeout(() => {
-      document.title = originalTitle;
-    }, 500);
+    setTimeout(() => { document.title = originalTitle; }, 500);
   }, 300);
 }
+
 /* ============================================================
    Theme Management (Light, Dark, AMOLED)
    ============================================================ */
 
 function setTheme(theme) {
-  // সব ক্লাস রিমুভ করা
   document.body.classList.remove('dark-mode', 'amoled-mode');
-  
-  // নতুন থিম অ্যাপ্লাই করা
   if (theme === 'dark') {
     document.body.classList.add('dark-mode');
   } else if (theme === 'amoled') {
     document.body.classList.add('amoled-mode');
   }
-  
-  // লোকাল স্টোরেজে সেভ করা
   localStorage.setItem('appTheme', theme);
-  
-  // মডাল বন্ধ করা
   closeThemeModal();
-  
-  // UI আপডেট (যদি দরকার হয়)
 }
 
 function openThemeModal() {
   const modal = document.getElementById('themeModalOverlay');
   if (!modal) return;
-  
   modal.classList.add('open');
-  
-  // বর্তমান থিম হাইলাইট করা
   const current = localStorage.getItem('appTheme') || 'light';
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.classList.remove('active');
@@ -298,7 +374,6 @@ function openThemeModal() {
       btn.classList.add('active');
     }
   });
-  
   if (typeof closeMenu === 'function') closeMenu();
 }
 
@@ -307,7 +382,6 @@ function closeThemeModal() {
   if (modal) modal.classList.remove('open');
 }
 
-// পেজ লোড হওয়ার সময় থিম চেক করা
 document.addEventListener('DOMContentLoaded', () => {
   const savedTheme = localStorage.getItem('appTheme') || 'light';
   if (savedTheme === 'dark') {
@@ -316,39 +390,130 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.classList.add('amoled-mode');
   }
 });
+
 /* ============================================================
-   🆕 Math Calculator for Numeric Fields
-   টাকার ঘরে +, -, *, /, % সাপোর্ট করে
+   🔒 ফিক্স ২: নিরাপদ ম্যাথ পার্সার (eval() এর বিকল্প)[cite: 22]
    ============================================================ */
+
+/* ============================================================
+   🔒 নিরাপদ ম্যাথ পার্সার ও ক্যালকুলেটর (সম্পূর্ণ ঠিক করা কোড)
+   ============================================================ */
+
+function safeMathEvaluate(expression) {
+  const input = String(expression).replace(/\s+/g, '');
+  if (!input || input.length > 200) {
+    throw new Error('Invalid expression');
+  }
+  if (!/^[0-9+\-*/%().\s]+$/.test(input)) {
+    throw new Error('Invalid characters');
+  }
+
+  // 🚫 পরপর একাধিক প্লাস চিহ্ন (যেমন ++ বা ++++) থাকলে তা ভুল হিসেবে গণ্য হবে
+  if (/\+{2,}/.test(input)) {
+    throw new Error('Invalid consecutive plus operators');
+  }
+
+  let pos = 0;
+
+  function parseExpression() {
+    let value = parseTerm();
+    while (pos < input.length) {
+      const op = input[pos];
+      if (op !== '+' && op !== '-') break;
+      pos++;
+      const right = parseTerm();
+      value = op === '+' ? value + right : value - right;
+    }
+    return value;
+  }
+
+  function parseTerm() {
+    let value = parseUnary();
+    while (pos < input.length) {
+      const op = input[pos];
+      if (op !== '*' && op !== '/') break;
+      pos++;
+      const right = parseUnary();
+      if (op === '/' && right === 0) {
+        throw new Error('Division by zero');
+      }
+      value = op === '*' ? value * right : value / right;
+    }
+    return value;
+  }
+
+  function parseUnary() {
+    if (input[pos] === '+') {
+      pos++;
+      return parseUnary();
+    }
+    if (input[pos] === '-') {
+      pos++;
+      return -parseUnary();
+    }
+    return parsePrimary();
+  }
+
+  function parsePrimary() {
+    let value;
+    if (input[pos] === '(') {
+      pos++;
+      value = parseExpression();
+      if (input[pos] !== ')') {
+        throw new Error('Missing closing parenthesis');
+      }
+      pos++;
+    } else {
+      const match = input.slice(pos).match(/^(?:\d+\.?\d*|\.\d+)/);
+      if (!match) {
+        throw new Error('Expected a number');
+      }
+      value = Number(match[0]);
+      pos += match[0].length;
+    }
+
+    while (input[pos] === '%') {
+      value /= 100;
+      pos++;
+    }
+
+    if (!Number.isFinite(value)) {
+      throw new Error('Invalid result');
+    }
+    return value;
+  }
+
+  const result = parseExpression();
+  if (pos !== input.length || !Number.isFinite(result)) {
+    throw new Error('Invalid expression');
+  }
+  return result;
+}
 
 function evaluateMathField(inputElement) {
   let val = inputElement.value.trim();
-  if (!val) return;
+  if (!val) return true;
 
-  // যদি শুধু সংখ্যা থাকে (কোনো অপারেটর নেই) — কিছু করব না
-  if (!/[+\-*/%]/.test(val)) return;
-
-  // সেফটি চেক: শুধু সংখ্যা, ডেসিমাল, স্পেস এবং + - * / % ( ) থাকতে পারবে
-  if (!/^[0-9+\-*/%().\s]+$/.test(val)) {
-    showToast('শুধু সংখ্যা এবং + - * / % ব্যবহার করুন', 'error');
-    inputElement.value = '';
-    inputElement.focus();
-    return;
+  // যদি শুধু সাধারণ সংখ্যা থাকে
+  if (!/[+\-*/%]/.test(val)) {
+    if (isNaN(Number(val))) {
+      showToast('হিসাবটি সঠিক নয়', 'error');
+      inputElement.value = ''; // ভুল হলে ফিল্ড খালি করে দেব
+      return false;
+    }
+    return true;
   }
 
   try {
-    let expression = val.replace(/%/g, '/100');
-    let result = eval(expression);
+    let result = safeMathEvaluate(val);
 
     if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
-      let rounded = Math.round(result * 100) / 100;
+      let rounded = Math.round((result + Number.EPSILON) * 100) / 100;
       inputElement.value = rounded;
 
-      // input/change ইভেন্ট ট্রিগার — যাতে hint আপডেট হয়
       inputElement.dispatchEvent(new Event('input', { bubbles: true }));
       inputElement.dispatchEvent(new Event('change', { bubbles: true }));
 
-      // সাকসেস ফিডব্যাক — বাটন সবুজ হয়ে যাবে
       const wrapper = inputElement.closest('.math-field-wrapper');
       if (wrapper) {
         const btn = wrapper.querySelector('.math-eq-btn');
@@ -361,15 +526,19 @@ function evaluateMathField(inputElement) {
           }, 900);
         }
       }
+      return true;
     } else {
       showToast('হিসাবটি সঠিক নয়', 'error');
+      inputElement.value = ''; // ভুল হলে ফিল্ড খালি করে দেব
+      return false;
     }
   } catch (error) {
     showToast('হিসাবটি সঠিক নয়', 'error');
+    inputElement.value = ''; // ভুল হলে ফিল্ড খালি করে দেব
+    return false;
   }
 }
 
-// 🆕 পেজ লোডের সময় সব নাম্বার-টাইপ ফিল্ডে ইভেন্ট অ্যাটাচ করি
 document.addEventListener('DOMContentLoaded', () => {
   const mathFieldIds = [
     'fAmount', 'fCash', 'fBkash',
@@ -377,7 +546,6 @@ document.addEventListener('DOMContentLoaded', () => {
     'fPaid'
   ];
 
-  // 🆕 হিন্ট দেখানোর কন্ডিশন
   const showMathHint = shouldShowMathHint();
 
   mathFieldIds.forEach(id => {
@@ -388,7 +556,6 @@ document.addEventListener('DOMContentLoaded', () => {
     el.setAttribute('inputmode', 'decimal');
     el.setAttribute('autocomplete', 'off');
 
-    // wrapper + "=" বাটন (সবসময় থাকবে)
     if (!el.parentElement.classList.contains('math-field-wrapper')) {
       const wrapper = document.createElement('div');
       wrapper.className = 'math-field-wrapper';
@@ -408,7 +575,6 @@ document.addEventListener('DOMContentLoaded', () => {
       wrapper.appendChild(eqBtn);
     }
 
-    // 🆕 💡 হিন্ট — শুধু কন্ডিশন সত্য হলে
     if (showMathHint && !el.parentElement.parentElement.querySelector('.math-hint')) {
       const hint = document.createElement('div');
       hint.className = 'math-hint';
@@ -416,7 +582,6 @@ document.addEventListener('DOMContentLoaded', () => {
       el.parentElement.parentElement.appendChild(hint);
     }
 
-        // ইভেন্ট লিসেনার
     if (!el.dataset.mathBound) {
       el.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -425,7 +590,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
       el.addEventListener('blur', () => {
-        // 🆕 setTimeout সরানো হয়েছে — সাথে সাথে evaluate হবে
         evaluateMathField(el);
       });
       el.dataset.mathBound = 'true';
@@ -433,39 +597,28 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-/* ============================================================
-   🆕 হিন্ট দেখানো/লুকানোর লজিক
-   ============================================================ */
-
-// ইউজার কতটি এন্ট্রি সেভ করেছে তা ট্র্যাক করি
 function incrementEntryCount() {
   const count = parseInt(localStorage.getItem('math_hint_entry_count') || '0', 10) + 1;
   localStorage.setItem('math_hint_entry_count', count);
 }
 
-// হিন্ট দেখানো উচিত কি না
 function shouldShowMathHint() {
-  // ১. ইউজার ম্যানুয়ালি অফ করে দিয়েছে?
   const manualSetting = localStorage.getItem('math_hint_manual_setting');
   if (manualSetting === 'off') return false;
   if (manualSetting === 'on') return true;
 
-  // ২. স্বয়ংক্রিয়: ২টি এন্ট্রি সেভ হয়ে গেলে বন্ধ
   const entryCount = parseInt(localStorage.getItem('math_hint_entry_count') || '0', 10);
-  return entryCount < 2; // প্রথম ২টি এন্ট্রি পর্যন্ত দেখাবে
+  return entryCount < 2;
 }
 
-// সেটিংস টগল
 function toggleMathHint() {
   const current = shouldShowMathHint();
   const newSetting = current ? 'off' : 'on';
   localStorage.setItem('math_hint_manual_setting', newSetting);
   showToast(newSetting === 'on' ? 'হিন্ট চালু হয়েছে' : 'হিন্ট বন্ধ হয়েছে', 'success');
 
-  // সব hint সরাসরি আপডেট করি (রিলোড ছাড়াই)
   document.querySelectorAll('.math-hint').forEach(el => el.remove());
   if (newSetting === 'on') {
-    // আবার যোগ করি
     const mathFieldIds = ['fAmount', 'fCash', 'fBkash', 'fPrice', 'fDue', 'fReceived', 'fCost', 'fPaid'];
     mathFieldIds.forEach(id => {
       const el = document.getElementById(id);
@@ -479,34 +632,25 @@ function toggleMathHint() {
       }
     });
   }
-
-  // মেনুর আইকন আপডেট
   updateMathHintMenuUI();
 }
 
-// সেটিংস মেনুর টেক্সট আপডেট
 function updateMathHintMenuUI() {
   const btn = document.getElementById('mathHintToggleBtn');
   if (!btn) return;
   const isOn = shouldShowMathHint();
-  // নতুন সেটিংস প্যানেলের স্ট্রাকচার অনুযায়ী আপডেট
   btn.innerHTML = `
     <span class="si-icon">💡</span>
     <span class="si-text">হিসাবের হিন্ট ${isOn ? 'বন্ধ করুন' : 'চালু করুন'}</span>
     <span class="si-arrow">›</span>
   `;
 }
-/* ============================================================
-   🆕 Settings Panel (সেটিংস প্যানেল)
-   ============================================================ */
 
 function openSettingsMenu() {
   const overlay = document.getElementById('settingsOverlay');
   const panel = document.getElementById('settingsPanel');
   if (overlay) overlay.classList.add('open');
   if (panel) panel.classList.add('open');
-  
-  // মেনুর টেক্সট আপডেট করি (হিন্ট অন/অফ অনুযায়ী)
   if (typeof updateMathHintMenuUI === 'function') updateMathHintMenuUI();
 }
 
@@ -516,21 +660,19 @@ function closeSettingsMenu() {
   if (overlay) overlay.classList.remove('open');
   if (panel) panel.classList.remove('open');
 }
-// 🆕 হেডারের হিন্ট বাটনের অবস্থা আপডেট করা
+
 function updateHeaderHintBtn() {
   const btn = document.getElementById('headerMathHintBtn');
   if (!btn) return;
-  
   if (shouldShowMathHint()) {
-    btn.style.opacity = '1';           // চালু থাকলে উজ্জ্বল দেখাবে
+    btn.style.opacity = '1';
     btn.style.background = 'rgba(255,255,255,0.25)';
   } else {
-    btn.style.opacity = '0.5';         // বন্ধ থাকলে হালকা দেখাবে
+    btn.style.opacity = '0.5';
     btn.style.background = 'rgba(255,255,255,0.05)';
   }
 }
 
-// 🆕 পেজ লোড হওয়ার সময় হেডারের বাটনটির স্টেট সেট করি
 document.addEventListener('DOMContentLoaded', () => {
   updateHeaderHintBtn();
 });

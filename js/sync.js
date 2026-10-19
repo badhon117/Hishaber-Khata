@@ -1,5 +1,5 @@
 /* ============================================================
-   Google Drive Sync Logic with Refresh Token
+   Google Drive Sync Logic with Refresh Token (Secured & Updated)
    ============================================================ */
 
 const CLIENT_ID = '555637526676-tje8vroaiqqjqje34uhaecf9vf7hfn6g.apps.googleusercontent.com';
@@ -10,25 +10,20 @@ let accessToken = null;
 let isSyncingFromCloud = false;
 
 window.addEventListener('load', () => {
-  let googleLoadAttempts = 0; // 🆕 কতবার চেষ্টা করেছি তার হিসাব
-  const MAX_ATTEMPTS = 20;    // 🆕 সর্বোচ্চ ২০ বার (১০ সেকেন্ড)
+  let googleLoadAttempts = 0;
+  const MAX_ATTEMPTS = 20;
 
   const initGoogle = () => {
-    // যদি Google স্ক্রিপ্ট এখনো লোড না হয়ে থাকে
     if (typeof google === 'undefined' || !google.accounts) {
       googleLoadAttempts++;
-      
       if (googleLoadAttempts >= MAX_ATTEMPTS) {
-        // ১০ সেকেন্ড পরেও লোড হয়নি -> থেমে যাই
         console.warn('Google Drive স্ক্রিপ্ট লোড হয়নি। ইন্টারনেট চেক করুন।');
         return; 
       }
-      
       setTimeout(initGoogle, 500);
       return;
     }
     
-    // স্ক্রিপ্ট লোড হয়ে গেছে -> এখন কাজ শুরু করি
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
       scope: SCOPES,
@@ -69,14 +64,7 @@ function checkExistingToken() {
 
 function handleGoogleLogin() {
   if (tokenClient) {
-    // 🆕 যদি ইউজার আগে থেকেই লগইন থাকে, তবে সরাসরি সিঙ্ক করব
-    if (accessToken) {
-      showToast('সিঙ্ক করা হচ্ছে...', 'success');
-      syncFromDrive(true); 
-    } else {
-      // লগইন না থাকলে গুগল পপআপ দেখাব
-      tokenClient.requestAccessToken({ prompt: 'select_account' });
-    }
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
   } else {
     showToast('ইন্টারনেট কানেকশন নেই বা গুগল লোড হয়নি। পেজ রিফ্রেশ করুন।', 'error');
   }
@@ -84,12 +72,12 @@ function handleGoogleLogin() {
 
 function changeGoogleAccount() {
   if (tokenClient) {
-    // গুগলকে বলছি নতুন অ্যাকাউন্ট সিলেক্ট করার পপআপ দেখাও
     tokenClient.requestAccessToken({ prompt: 'select_account' });
   } else {
     showToast('ইন্টারনেট কানেকশন নেই', 'error');
   }
 }
+
 function updateLoginUI(isLoggedIn) {
   const btnText = document.getElementById('loginBtnText');
   const btn = document.getElementById('loginBtn');
@@ -99,11 +87,11 @@ function updateLoginUI(isLoggedIn) {
     if (isLoggedIn) {
       btnText.textContent = 'গুগল ড্রাইভে সিঙ্কড ✅';
       btn.style.background = '#ECFDF5';
-      if (switchBtn) switchBtn.style.display = 'flex'; // লগইন থাকলে দেখাবে
+      if (switchBtn) switchBtn.style.display = 'flex';
     } else {
       btnText.textContent = 'Google Drive-এ সিঙ্ক করুন';
       btn.style.background = '';
-      if (switchBtn) switchBtn.style.display = 'none'; // লগইন না থাকলে লুকাবে
+      if (switchBtn) switchBtn.style.display = 'none';
     }
   }
 }
@@ -111,7 +99,6 @@ function updateLoginUI(isLoggedIn) {
 async function saveToDrive() {
   if (!accessToken) return;
 
-  // 🆕 টোকেনের মেয়াদ চেক — expire-এর ৫ মিনিট আগে হলে আবার লগইন দরকার
   const expiry = localStorage.getItem('gdrive_token_expiry');
   if (expiry && Date.now() > (parseInt(expiry) - 300000)) {
     console.warn('Token expired or about to expire');
@@ -136,16 +123,23 @@ async function saveToDrive() {
       headers: { 'Authorization': 'Bearer ' + accessToken }
     });
 
-    // 🆕 401/403 চেক — fetch throw করে না, তাই response.status চেক করি
-    if (searchRes.status === 401 || searchRes.status === 403) {
-      console.warn('Drive auth failed (search):', searchRes.status);
-      handleTokenExpired();
-      return;
+    if (!searchRes.ok) {
+      if (searchRes.status === 401 || searchRes.status === 403) {
+        handleTokenExpired();
+        return;
+      }
+      throw new Error('Drive file search failed: HTTP ' + searchRes.status);
     }
 
     const searchData = await searchRes.json();
+    if (!searchData || !Array.isArray(searchData.files)) {
+      throw new Error('Drive returned an invalid file list');
+    }
+
     let fileId = null;
-    if (searchData.files && searchData.files.length > 0) fileId = searchData.files[0].id;
+    if (searchData.files.length > 0) {
+      fileId = searchData.files[0].id;
+    }
 
     let saveRes;
     if (fileId) {
@@ -168,40 +162,37 @@ async function saveToDrive() {
       });
     }
 
-    // 🆕 সেভেও 401/403 চেক
-    if (saveRes.status === 401 || saveRes.status === 403) {
-      console.warn('Drive auth failed (save):', saveRes.status);
-      handleTokenExpired();
-      return;
+    if (!saveRes.ok) {
+      if (saveRes.status === 401 || saveRes.status === 403) {
+        handleTokenExpired();
+        return;
+      }
+      const errorBody = await saveRes.text().catch(() => '');
+      throw new Error('Drive upload failed: HTTP ' + saveRes.status + (errorBody ? ' - ' + errorBody.slice(0, 300) : ''));
     }
 
     console.log('✅ Drive save successful');
+    showToast('Google Drive-এ ব্যাকআপ সেভ হয়েছে', 'success');
 
   } catch (error) {
-    // এটা আসলে নেটওয়ার্ক error (ইন্টারনেট নেই) বা অন্যান্য সমস্যা
-    console.error('Drive Save Network Error:', error);
+    console.error('Google Drive save failed:', error);
+    showToast('Google Drive-এ সেভ করা যায়নি। ইন্টারনেট ও অনুমতি পরীক্ষা করুন।', 'error');
   }
 }
 
-// 🆕 টোকেন expire হলে যা করব
 function handleTokenExpired() {
-  // ১. টোকেন মুছে দিই
   accessToken = null;
   localStorage.removeItem('gdrive_access_token');
   localStorage.removeItem('gdrive_token_expiry');
-
-  // ২. UI আপডেট — "লগইন বাটন" আবার দেখাই
   updateLoginUI(false);
 
-  // ৩. ইউজারকে জানাই (শুধু একবার, বারবার নয়)
   const lastNotice = sessionStorage.getItem('token_expired_notice');
   if (!lastNotice) {
     sessionStorage.setItem('token_expired_notice', 'true');
-    showToast('সিঙ্ক বন্ধ হয়েছে। আবার লগইন করুন।', 'error');
+    showToast('সিঙ্ক বন্ধ হয়েছে। আবার লগইন করুন।', 'error');
   }
 }
 
-// 🆕 দুটো array-এর এন্ট্রি merge করি, ডুপ্লিকেট id বাদ দিয়ে
 function mergeEntries(localArr, cloudArr) {
   if (!Array.isArray(localArr)) localArr = [];
   if (!Array.isArray(cloudArr)) cloudArr = [];
@@ -218,7 +209,6 @@ function mergeEntries(localArr, cloudArr) {
   return merged;
 }
 
-// 🆕 স্ট্রিং array (categories, shops, sellers) merge — ডুপ্লিকেট বাদ
 function mergeStrings(localArr, cloudArr) {
   if (!Array.isArray(localArr)) localArr = [];
   if (!Array.isArray(cloudArr)) cloudArr = [];
@@ -227,7 +217,6 @@ function mergeStrings(localArr, cloudArr) {
   return Array.from(set);
 }
 
-
 async function syncFromDrive(isManualSync = false) {
   if (!accessToken) return;
   try {
@@ -235,11 +224,12 @@ async function syncFromDrive(isManualSync = false) {
       headers: { 'Authorization': 'Bearer ' + accessToken }
     });
 
-    // 🆕 401/403 চেক
-    if (searchRes.status === 401 || searchRes.status === 403) {
-      console.warn('Drive load auth failed:', searchRes.status);
-      handleTokenExpired();
-      return;
+    if (!searchRes.ok) {
+      if (searchRes.status === 401 || searchRes.status === 403) {
+        handleTokenExpired();
+        return;
+      }
+      throw new Error('Drive load search failed: HTTP ' + searchRes.status);
     }
 
     const searchData = await searchRes.json();
@@ -250,17 +240,18 @@ async function syncFromDrive(isManualSync = false) {
         headers: { 'Authorization': 'Bearer ' + accessToken }
       });
 
-      if (fileRes.status === 401 || fileRes.status === 403) {
-        handleTokenExpired();
-        return;
+      if (!fileRes.ok) {
+        if (fileRes.status === 401 || fileRes.status === 403) {
+          handleTokenExpired();
+          return;
+        }
+        throw new Error('Drive download failed: HTTP ' + fileRes.status);
       }
 
       const data = await fileRes.json();
 
-      // 🆕 SMART MERGE — কিছুই হারাবে না
       isSyncingFromCloud = true;
 
-      // --- বাসার হিসাব ---
       const localHome = loadFromStorage('hisaber_khata_home_v1', []) || [];
       const cloudHome = Array.isArray(data.home_entries) ? data.home_entries : [];
       saveToStorage('hisaber_khata_home_v1', mergeEntries(localHome, cloudHome));
@@ -269,7 +260,6 @@ async function syncFromDrive(isManualSync = false) {
       const cloudCats = Array.isArray(data.home_categories) ? data.home_categories : [];
       saveToStorage('hisaber_khata_categories_v1', mergeStrings(localCats, cloudCats));
 
-      // --- দোকানের হিসাব ---
       const localShop = loadFromStorage('hisaber_khata_shop_v1', []) || [];
       const cloudShop = Array.isArray(data.shop_entries) ? data.shop_entries : [];
       saveToStorage('hisaber_khata_shop_v1', mergeEntries(localShop, cloudShop));
@@ -282,20 +272,17 @@ async function syncFromDrive(isManualSync = false) {
       const cloudSellers = Array.isArray(data.shop_sellers) ? data.shop_sellers : [];
       saveToStorage('hisaber_khata_sellers_v1', mergeStrings(localSellers, cloudSellers));
 
-      // --- মালামাল ক্রয়ের হিসাব ---
       const localGoods = loadFromStorage('hisaber_khata_goods_v1', []) || [];
       const cloudGoods = Array.isArray(data.goods_entries) ? data.goods_entries : [];
       saveToStorage('hisaber_khata_goods_v1', mergeEntries(localGoods, cloudGoods));
 
       isSyncingFromCloud = false;
 
-           // 🆕 মার্জের পর ক্লাউডেও আপডেট পাঠাই (যাতে দুইদিকে একই থাকে)
       setTimeout(() => { saveToDrive(); }, 500);
 
-            // 🆕 পেজ লোডের সময় শুধু ১ বার রিলোড হবে, কিন্তু ইউজার ম্যানুয়ালি চাপলে সবসময় রিলোড হবে
       const shouldReload = isManualSync || !sessionStorage.getItem('drive_synced_once');
       
-            if (shouldReload) {
+      if (shouldReload) {
         sessionStorage.setItem('drive_synced_once', 'true');
         showToast('সব ডেটা মিলিয়ে নেওয়া হয়েছে ✅', 'success');
         setTimeout(() => { window.location.reload(); }, 1200);

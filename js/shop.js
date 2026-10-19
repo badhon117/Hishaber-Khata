@@ -22,37 +22,25 @@ let sellerManageMode = false;                    // 🆕
 /* ============================================================
    Storage Load / Save
    ============================================================ */
-function loadData() {
-  entries = loadFromStorage(STORAGE_KEY, []);
-  if (!Array.isArray(entries)) entries = [];
-
-  shops = loadFromStorage(SHOP_KEY, null);
-  if (!Array.isArray(shops) || shops.length === 0) {
-    shops = DEFAULT_SHOPS.slice();
-  }
-
-  // 🆕 বিক্রেতা — সম্পূর্ণ খালি থেকে শুরু
-  sellers = loadFromStorage(SELLER_KEY, []);
-  if (!Array.isArray(sellers)) sellers = [];
-}
-
 function saveData() {
-  saveToStorage(STORAGE_KEY, entries);
+  const success = saveToStorage(STORAGE_KEY, entries);
+  if (!success) {
+    throw new Error('STORAGE_WRITE_FAILED');
+  }
 }
 
 function saveShops() {
-  saveToStorage(SHOP_KEY, shops);
+  const success = saveToStorage(SHOP_KEY, shops);
+  if (!success) {
+    throw new Error('STORAGE_WRITE_FAILED');
+  }
 }
 
-function saveSellers() {                          // 🆕
-  saveToStorage(SELLER_KEY, sellers);
-}
-
-/**
- * ডিফল্ট দোকান কি না
- */
-function isDefaultShop(name) {
-  return DEFAULT_SHOPS.includes(name);
+function saveSellers() {
+  const success = saveToStorage(SELLER_KEY, sellers);
+  if (!success) {
+    throw new Error('STORAGE_WRITE_FAILED');
+  }
 }
 
 /* ============================================================
@@ -568,11 +556,23 @@ function evaluateAllMathFields() {
 }
 
 function saveEntry() {
-	 evaluateAllMathFields();   // 🆕
+  // ১. সব ম্যাথ ফিল্ড আগে evaluate ও validate করি
+  const ids = ['fPrice', 'fCash', 'fDue', 'fReceived', 'fCost'];
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el && typeof evaluateMathField === 'function') {
+      const isValid = evaluateMathField(el);
+      if (!isValid) {
+        el.focus();
+        return;
+      }
+    }
+  }
+
   const id = document.getElementById('editId').value;
   const date = document.getElementById('fDate').value;
   const shop = currentShop;
-  const seller = currentSeller;                          // 🆕
+  const seller = currentSeller;
   const customer = document.getElementById('fCustomer').value.trim();
   const description = document.getElementById('fDescription').value.trim();
   const price = parseFloat(document.getElementById('fPrice').value) || 0;
@@ -582,28 +582,41 @@ function saveEntry() {
   const cost = parseFloat(document.getElementById('fCost').value) || 0;
   const note = document.getElementById('fNote').value.trim();
 
+  // ২. মৌলিক যাচাই
   if (!date) { showToast('তারিখ দিন', 'error'); return; }
   if (!shop) { showToast('দোকানের নাম নির্বাচন করুন', 'error'); return; }
-  
 
-  if (id) {
-    const idx = entries.findIndex(x => x.id === id);
-    if (idx >= 0) {
-      entries[idx] = { ...entries[idx], date, shop, seller, customer, description, price, cash, due, received, cost, note };
-      showToast('আপডেট হয়েছে', 'success');
-    }
-  } else {
-        entries.push({
-      id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-      date, shop, seller, customer, description, price, cash, due, received, cost, note,
-      createdAt: Date.now()
-    });
-    showToast('সেভ হয়েছে', 'success');
-	incrementEntryCount();  // 🆕 এই লাইন
+  // আর্থিক মানের বৈধতা পরীক্ষা (ঋণাত্মক হতে পারবে না)
+  if (price < 0 || cash < 0 || due < 0 || received < 0 || cost < 0) {
+    showToast('আর্থিক পরিমাণ ঋণাত্মক হতে পারে না', 'error');
+    return;
   }
-  saveData();
-  startNewEntry();
-  renderMonthOptions();
+
+  try {
+    if (id) {
+      const idx = entries.findIndex(x => x.id === id);
+      if (idx >= 0) {
+        entries[idx] = { ...entries[idx], date, shop, seller, customer, description, price, cash, due, received, cost, note };
+        saveData();
+        showToast('আপডেট হয়েছে', 'success');
+      }
+    } else {
+      entries.push({
+        id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        date, shop, seller, customer, description, price, cash, due, received, cost, note,
+        createdAt: Date.now()
+      });
+      saveData();
+      showToast('সেভ হয়েছে', 'success');
+      incrementEntryCount();
+    }
+    
+    startNewEntry();
+    renderMonthOptions();
+  } catch (err) {
+    console.error('Save shop entry failed:', err);
+    showToast('ডেটা সেভ করা যায়নি। স্টোরেজ পূর্ণ থাকতে পারে।', 'error');
+  }
 }
 
 function deleteCurrent() {

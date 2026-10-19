@@ -30,11 +30,17 @@ function loadData() {
 }
 
 function saveData() {
-  saveToStorage(STORAGE_KEY, entries);
+  const success = saveToStorage(STORAGE_KEY, entries);
+  if (!success) {
+    throw new Error('STORAGE_WRITE_FAILED');
+  }
 }
 
 function saveCats() {
-  saveToStorage(CAT_KEY, categories);
+  const success = saveToStorage(CAT_KEY, categories);
+  if (!success) {
+    throw new Error('STORAGE_WRITE_FAILED');
+  }
 }
 
 /* ============================================================
@@ -354,7 +360,19 @@ function evaluateAllMathFields() {
 
 /* ---------- Save / Delete ---------- */
 function saveEntry() {
-	evaluateAllMathFields();   // 🆕 ম্যাথ আগে evaluate করি
+  // ১. সব ম্যাথ ফিল্ড আগে evaluate ও validate করি
+  const ids = ['fAmount', 'fCash', 'fBkash'];
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (el && typeof evaluateMathField === 'function') {
+      const isValid = evaluateMathField(el);
+      if (!isValid) {
+        el.focus();
+        return;
+      }
+    }
+  }
+
   const id = document.getElementById('editId').value;
   const date = document.getElementById('fDate').value;
   const category = currentCategory;
@@ -364,34 +382,49 @@ function saveEntry() {
   const bkash = parseFloat(document.getElementById('fBkash').value) || 0;
   const note = document.getElementById('fNote').value.trim();
 
+  // ২. কঠোর ইনপুট যাচাই (Business Rules & Validation)
   if (!date) { showToast('তারিখ দিন', 'error'); return; }
   if (!category) { showToast('খাতের ধরন নির্বাচন করুন', 'error'); return; }
-  if (!amount || amount <= 0) { showToast('সঠিক পরিমাণ দিন', 'error'); return; }
+  if (isNaN(amount) || amount <= 0 || !Number.isFinite(amount)) {
+    showToast('সঠিক পরিমাণ দিন', 'error');
+    return;
+  }
+  if (isNaN(cash) || cash < 0 || isNaN(bkash) || bkash < 0) {
+    showToast('ক্যাশ বা বিকাশের পরিমাণ ঋণাত্মক হতে পারে না', 'error');
+    return;
+  }
 
+  // ৩. ক্যাশ + বিকাশ নিয়মের পরীক্ষা
   if (Math.abs((cash + bkash) - amount) > 0.001) {
     showToast('ক্যাশ + বিকাশ = পরিমাণ হতে হবে', 'error');
     return;
   }
 
-  if (id) {
-    const idx = entries.findIndex(x => x.id === id);
-    if (idx >= 0) {
-      entries[idx] = { ...entries[idx], date, category, description, amount, cash, bkash, note };
-      showToast('আপডেট হয়েছে', 'success');
+  try {
+    if (id) {
+      const idx = entries.findIndex(x => x.id === id);
+      if (idx >= 0) {
+        entries[idx] = { ...entries[idx], date, category, description, amount, cash, bkash, note };
+        saveData();
+        showToast('আপডেট হয়েছে', 'success');
+      }
+    } else {
+      entries.push({
+        id: 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        date, category, description, amount, cash, bkash, note,
+        createdAt: Date.now()
+      });
+      saveData();
+      showToast('সেভ হয়েছে', 'success');
+      incrementEntryCount();
     }
-  } else {
-    entries.push({
-      id: 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-      date, category, description, amount, cash, bkash, note,
-      createdAt: Date.now()
-    });
-    showToast('সেভ হয়েছে', 'success');
-	incrementEntryCount();  // 🆕 এই লাইন
+    
+    startNewEntry();
+    renderMonthOptions();
+  } catch (err) {
+    console.error('Save entry failed:', err);
+    showToast('ডেটা সেভ করা যায়নি। স্টোরেজ পূর্ণ থাকতে পারে।', 'error');
   }
-  
-  saveData();
-  startNewEntry();
-  renderMonthOptions();
 }
 
 function deleteCurrent() {
