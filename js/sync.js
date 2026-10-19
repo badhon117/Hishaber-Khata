@@ -69,9 +69,14 @@ function checkExistingToken() {
 
 function handleGoogleLogin() {
   if (tokenClient) {
-    // প্রথমবার লগইন বা নতুন অ্যাকাউন্ট যোগ করার জন্য
-    // লগইন সফল হলে (callback-এ) syncFromDrive(true) কল হবে
-    tokenClient.requestAccessToken({ prompt: 'select_account' });
+    // 🆕 যদি ইউজার আগে থেকেই লগইন থাকে, তবে সরাসরি সিঙ্ক করব
+    if (accessToken) {
+      showToast('সিঙ্ক করা হচ্ছে...', 'success');
+      syncFromDrive(true); 
+    } else {
+      // লগইন না থাকলে গুগল পপআপ দেখাব
+      tokenClient.requestAccessToken({ prompt: 'select_account' });
+    }
   } else {
     showToast('ইন্টারনেট কানেকশন নেই বা গুগল লোড হয়নি। পেজ রিফ্রেশ করুন।', 'error');
   }
