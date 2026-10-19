@@ -49,11 +49,10 @@ function loadFromStorage(key, fallback = null) {
 function saveToStorage(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-    if (typeof saveToDrive === 'function' && typeof accessToken !== 'undefined' && accessToken) {
-      if (typeof isSyncingFromCloud !== 'undefined' && !isSyncingFromCloud) {
-         saveToDrive();
-      }
-    }
+    
+    // 🆕 অটো-সিঙ্ক বন্ধ করা হলো (শুধু ম্যানুয়ালি সিঙ্ক হবে)
+    // ইউজার নিজে "সিঙ্ক" বাটনে ক্লিক করলে তবেই ক্লাউডে যাবে।
+    
   } catch (e) {
     console.error('Storage save failed:', e);
     showToast('ডেটা সেভ করা যায়নি', 'error');
@@ -116,6 +115,7 @@ function downloadBackup() {
       home_categories: loadFromStorage('hisaber_khata_categories_v1', []),
       shop_entries: loadFromStorage('hisaber_khata_shop_v1', []),
       shop_shops: loadFromStorage('hisaber_khata_shops_v1', []),
+	  shop_sellers: loadFromStorage('hisaber_khata_sellers_v1', []),   // 🆕
       goods_entries: loadFromStorage('hisaber_khata_goods_v1', [])
     }
   };
@@ -149,7 +149,8 @@ function handleRestoreFile(event) {
       if (Array.isArray(d.home_categories)) saveToStorage('hisaber_khata_categories_v1', d.home_categories);
       if (Array.isArray(d.shop_entries)) saveToStorage('hisaber_khata_shop_v1', d.shop_entries);
       if (Array.isArray(d.shop_shops)) saveToStorage('hisaber_khata_shops_v1', d.shop_shops);
-      if (Array.isArray(d.goods_entries)) saveToStorage('hisaber_khata_goods_v1', d.goods_entries);
+       if (Array.isArray(d.shop_sellers)) saveToStorage('hisaber_khata_sellers_v1', d.shop_sellers);   // 🆕
+	  if (Array.isArray(d.goods_entries)) saveToStorage('hisaber_khata_goods_v1', d.goods_entries);
       showToast('সফলভাবে রিস্টোর হয়েছে', 'success');
       setTimeout(() => { window.location.reload(); }, 1200);
     } catch (err) { showToast('ফাইল পড়া যায়নি', 'error'); }
@@ -161,6 +162,28 @@ let deferredInstallPrompt = null;
 const INSTALL_DISMISSED = 'hisaber_install_dismissed';
 const INSTALL_LATER = 'hisaber_install_later';
 const INSTALL_NOTIFIED = 'hisaber_install_notified';
+function updateInstallButtons() {
+  // এই ফাংশনটি প্রতিবার পেজ লোডে কল হয়।
+  // ভবিষ্যতে ইনস্টল বাটনের UI আপডেট লাগলে এখানে কোড লিখব।
+  // এখন শুধু খালি রাখছি যাতে undefined error না আসে।
+}
+
+function handleInstallClick() {
+  if (deferredInstallPrompt) {
+    // ব্রাউজারের আসল install prompt দেখাও
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        showToast('ইনস্টল শুরু হয়েছে...', 'success');
+      }
+      deferredInstallPrompt = null;
+    });
+  } else {
+    // ব্রাউজার সাপোর্ট না করলে বা আগেই ইনস্টল করা থাকলে
+    // ম্যানুয়াল ইনস্টল গাইড দেখাও
+    showIOSInstallModal();
+  }
+}
 
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault(); deferredInstallPrompt = e; updateInstallButtons();
@@ -292,4 +315,222 @@ document.addEventListener('DOMContentLoaded', () => {
   } else if (savedTheme === 'amoled') {
     document.body.classList.add('amoled-mode');
   }
+});
+/* ============================================================
+   🆕 Math Calculator for Numeric Fields
+   টাকার ঘরে +, -, *, /, % সাপোর্ট করে
+   ============================================================ */
+
+function evaluateMathField(inputElement) {
+  let val = inputElement.value.trim();
+  if (!val) return;
+
+  // যদি শুধু সংখ্যা থাকে (কোনো অপারেটর নেই) — কিছু করব না
+  if (!/[+\-*/%]/.test(val)) return;
+
+  // সেফটি চেক: শুধু সংখ্যা, ডেসিমাল, স্পেস এবং + - * / % ( ) থাকতে পারবে
+  if (!/^[0-9+\-*/%().\s]+$/.test(val)) {
+    showToast('শুধু সংখ্যা এবং + - * / % ব্যবহার করুন', 'error');
+    inputElement.value = '';
+    inputElement.focus();
+    return;
+  }
+
+  try {
+    let expression = val.replace(/%/g, '/100');
+    let result = eval(expression);
+
+    if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
+      let rounded = Math.round(result * 100) / 100;
+      inputElement.value = rounded;
+
+      // input/change ইভেন্ট ট্রিগার — যাতে hint আপডেট হয়
+      inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+      inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+
+      // সাকসেস ফিডব্যাক — বাটন সবুজ হয়ে যাবে
+      const wrapper = inputElement.closest('.math-field-wrapper');
+      if (wrapper) {
+        const btn = wrapper.querySelector('.math-eq-btn');
+        if (btn) {
+          btn.classList.add('success');
+          btn.textContent = '✓';
+          setTimeout(() => {
+            btn.classList.remove('success');
+            btn.textContent = '=';
+          }, 900);
+        }
+      }
+    } else {
+      showToast('হিসাবটি সঠিক নয়', 'error');
+    }
+  } catch (error) {
+    showToast('হিসাবটি সঠিক নয়', 'error');
+  }
+}
+
+// 🆕 পেজ লোডের সময় সব নাম্বার-টাইপ ফিল্ডে ইভেন্ট অ্যাটাচ করি
+document.addEventListener('DOMContentLoaded', () => {
+  const mathFieldIds = [
+    'fAmount', 'fCash', 'fBkash',
+    'fPrice', 'fDue', 'fReceived', 'fCost',
+    'fPaid'
+  ];
+
+  // 🆕 হিন্ট দেখানোর কন্ডিশন
+  const showMathHint = shouldShowMathHint();
+
+  mathFieldIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.setAttribute('type', 'text');
+    el.setAttribute('inputmode', 'decimal');
+    el.setAttribute('autocomplete', 'off');
+
+    // wrapper + "=" বাটন (সবসময় থাকবে)
+    if (!el.parentElement.classList.contains('math-field-wrapper')) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'math-field-wrapper';
+      el.parentNode.insertBefore(wrapper, el);
+      wrapper.appendChild(el);
+
+      const eqBtn = document.createElement('button');
+      eqBtn.type = 'button';
+      eqBtn.className = 'math-eq-btn';
+      eqBtn.textContent = '=';
+      eqBtn.setAttribute('title', 'হিসাব করুন');
+      eqBtn.onclick = (e) => {
+        e.preventDefault();
+        evaluateMathField(el);
+        el.focus();
+      };
+      wrapper.appendChild(eqBtn);
+    }
+
+    // 🆕 💡 হিন্ট — শুধু কন্ডিশন সত্য হলে
+    if (showMathHint && !el.parentElement.parentElement.querySelector('.math-hint')) {
+      const hint = document.createElement('div');
+      hint.className = 'math-hint';
+      hint.innerHTML = '💡 <b>250+30</b>, <b>100*5</b>, <b>10%</b> — Enter বা <b>=</b> চাপুন';
+      el.parentElement.parentElement.appendChild(hint);
+    }
+
+        // ইভেন্ট লিসেনার
+    if (!el.dataset.mathBound) {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          evaluateMathField(el);
+        }
+      });
+      el.addEventListener('blur', () => {
+        // 🆕 setTimeout সরানো হয়েছে — সাথে সাথে evaluate হবে
+        evaluateMathField(el);
+      });
+      el.dataset.mathBound = 'true';
+    }
+  });
+});
+
+/* ============================================================
+   🆕 হিন্ট দেখানো/লুকানোর লজিক
+   ============================================================ */
+
+// ইউজার কতটি এন্ট্রি সেভ করেছে তা ট্র্যাক করি
+function incrementEntryCount() {
+  const count = parseInt(localStorage.getItem('math_hint_entry_count') || '0', 10) + 1;
+  localStorage.setItem('math_hint_entry_count', count);
+}
+
+// হিন্ট দেখানো উচিত কি না
+function shouldShowMathHint() {
+  // ১. ইউজার ম্যানুয়ালি অফ করে দিয়েছে?
+  const manualSetting = localStorage.getItem('math_hint_manual_setting');
+  if (manualSetting === 'off') return false;
+  if (manualSetting === 'on') return true;
+
+  // ২. স্বয়ংক্রিয়: ২টি এন্ট্রি সেভ হয়ে গেলে বন্ধ
+  const entryCount = parseInt(localStorage.getItem('math_hint_entry_count') || '0', 10);
+  return entryCount < 2; // প্রথম ২টি এন্ট্রি পর্যন্ত দেখাবে
+}
+
+// সেটিংস টগল
+function toggleMathHint() {
+  const current = shouldShowMathHint();
+  const newSetting = current ? 'off' : 'on';
+  localStorage.setItem('math_hint_manual_setting', newSetting);
+  showToast(newSetting === 'on' ? 'হিন্ট চালু হয়েছে' : 'হিন্ট বন্ধ হয়েছে', 'success');
+
+  // সব hint সরাসরি আপডেট করি (রিলোড ছাড়াই)
+  document.querySelectorAll('.math-hint').forEach(el => el.remove());
+  if (newSetting === 'on') {
+    // আবার যোগ করি
+    const mathFieldIds = ['fAmount', 'fCash', 'fBkash', 'fPrice', 'fDue', 'fReceived', 'fCost', 'fPaid'];
+    mathFieldIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const formGroup = el.closest('.form-group');
+      if (formGroup && !formGroup.querySelector('.math-hint')) {
+        const hint = document.createElement('div');
+        hint.className = 'math-hint';
+        hint.innerHTML = '💡 <b>250+30</b>, <b>100*5</b>, <b>10%</b> — Enter বা <b>=</b> চাপুন';
+        formGroup.appendChild(hint);
+      }
+    });
+  }
+
+  // মেনুর আইকন আপডেট
+  updateMathHintMenuUI();
+}
+
+// সেটিংস মেনুর টেক্সট আপডেট
+function updateMathHintMenuUI() {
+  const btn = document.getElementById('mathHintToggleBtn');
+  if (!btn) return;
+  const isOn = shouldShowMathHint();
+  // নতুন সেটিংস প্যানেলের স্ট্রাকচার অনুযায়ী আপডেট
+  btn.innerHTML = `
+    <span class="si-icon">💡</span>
+    <span class="si-text">হিসাবের হিন্ট ${isOn ? 'বন্ধ করুন' : 'চালু করুন'}</span>
+    <span class="si-arrow">›</span>
+  `;
+}
+/* ============================================================
+   🆕 Settings Panel (সেটিংস প্যানেল)
+   ============================================================ */
+
+function openSettingsMenu() {
+  const overlay = document.getElementById('settingsOverlay');
+  const panel = document.getElementById('settingsPanel');
+  if (overlay) overlay.classList.add('open');
+  if (panel) panel.classList.add('open');
+  
+  // মেনুর টেক্সট আপডেট করি (হিন্ট অন/অফ অনুযায়ী)
+  if (typeof updateMathHintMenuUI === 'function') updateMathHintMenuUI();
+}
+
+function closeSettingsMenu() {
+  const overlay = document.getElementById('settingsOverlay');
+  const panel = document.getElementById('settingsPanel');
+  if (overlay) overlay.classList.remove('open');
+  if (panel) panel.classList.remove('open');
+}
+// 🆕 হেডারের হিন্ট বাটনের অবস্থা আপডেট করা
+function updateHeaderHintBtn() {
+  const btn = document.getElementById('headerMathHintBtn');
+  if (!btn) return;
+  
+  if (shouldShowMathHint()) {
+    btn.style.opacity = '1';           // চালু থাকলে উজ্জ্বল দেখাবে
+    btn.style.background = 'rgba(255,255,255,0.25)';
+  } else {
+    btn.style.opacity = '0.5';         // বন্ধ থাকলে হালকা দেখাবে
+    btn.style.background = 'rgba(255,255,255,0.05)';
+  }
+}
+
+// 🆕 পেজ লোড হওয়ার সময় হেডারের বাটনটির স্টেট সেট করি
+document.addEventListener('DOMContentLoaded', () => {
+  updateHeaderHintBtn();
 });

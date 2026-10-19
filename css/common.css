@@ -1407,3 +1407,298 @@ body.amoled-mode .theme-option {
   border-color: #333333 !important;
 }
 body.amoled-mode .theme-modal h3 { color: #FFFFFF !important; }
+/* ============================================================
+   🆕 Math Calculator Styles (হিসাবের ঘর)
+   ============================================================ */
+
+.math-field-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.math-field-wrapper input {
+  padding-right: 48px !important; /* ডান দিকে "=" বাটনের জায়গা */
+}
+
+.math-eq-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: #2563EB;
+  color: white;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(37,99,235,0.3);
+  z-index: 2;
+}
+.math-eq-btn:hover {
+  background: #1D4ED8;
+  transform: translateY(-50%) scale(1.05);
+}
+.math-eq-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+.math-eq-btn.success {
+  background: #059669;
+  box-shadow: 0 2px 6px rgba(5,150,105,0.4);
+}
+
+.math-hint {
+  font-size: 11px;
+  color: #94A3B8;
+  margin-top: 5px;
+  line-height: 1.4;
+  letter-spacing: 0.1px;
+}
+.math-hint b {
+  color: #2563EB;
+  font-weight: 700;
+}
+
+/* ডার্ক মোডে */
+body.dark-mode .math-eq-btn {
+  background: #3B82F6;
+  box-shadow: 0 2px 6px rgba(59,130,246,0.4);
+}
+body.dark-mode .math-eq-btn:hover {
+  background: #2563EB;
+}
+body.dark-mode .math-eq-btn.success {
+  background: #10B981;
+}
+body.dark-mode .math-hint {
+  color: #64748B;
+}
+body.dark-mode .math-hint b {
+  color: #60A5FA;
+}
+
+/* অ্যামোলেড মোডে */
+body.amoled-mode .math-eq-btn {
+  background: #3B82F6;
+}
+body.amoled-mode .math-eq-btn.success {
+  background: #10B981;
+}
+body.amoled-mode .math-hint {
+  color: #555555;
+}
+body.amoled-mode .math-hint b {
+  color: #60A5FA;
+}
+
+/* মোবাইল রেসপন্সিভ */
+@media (max-width: 400px) {
+  .math-eq-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    right: 5px;
+  }
+  .math-field-wrapper input {
+    padding-right: 42px !important;
+  }
+  .math-hint {
+    font-size: 10.5px;
+  }
+}
+/* ============================================================
+   🆕 Settings Panel (সেটিংস প্যানেল)
+   ============================================================ */
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  z-index: 300;
+}
+.settings-overlay.open { display: block; }
+
+.settings-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  max-width: 80vw;
+  background: white;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  z-index: 310;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+.settings-panel.open { transform: translateX(0); }
+
+.settings-header {
+  padding: 20px;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);
+  color: white;
+}
+.settings-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+}
+.settings-close {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: 0.15s;
+}
+.settings-close:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.settings-list {
+  padding: 10px 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  font-size: 14.5px;
+  color: #1E293B;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  transition: 0.12s;
+  border-bottom: 1px solid #F1F5F9;
+}
+.settings-item:hover { background: #F8FAFC; }
+.settings-item:active { background: #EFF6FF; }
+.settings-item .si-icon {
+  font-size: 20px;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.settings-item .si-text {
+  flex: 1;
+}
+.settings-item .si-arrow {
+  font-size: 20px;
+  color: #94A3B8;
+  font-weight: 300;
+}
+
+.settings-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #E2E8F0;
+  text-align: center;
+  font-size: 11.5px;
+  color: #94A3B8;
+  background: #F8FAFC;
+}
+
+/* ডার্ক মোডে */
+body.dark-mode .settings-panel {
+  background: #1E293B;
+}
+body.dark-mode .settings-header {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+}
+body.dark-mode .settings-item {
+  color: #F1F5F9;
+  border-bottom-color: #334155;
+}
+body.dark-mode .settings-item:hover { background: #334155; }
+body.dark-mode .settings-item .si-arrow { color: #64748B; }
+body.dark-mode .settings-footer {
+  background: #0F172A;
+  border-top-color: #334155;
+  color: #64748B;
+}
+
+/* অ্যামোলেড মোডে */
+body.amoled-mode .settings-panel {
+  background: #111111;
+}
+body.amoled-mode .settings-header {
+  background: #000000;
+}
+body.amoled-mode .settings-item {
+  color: #FFFFFF;
+  border-bottom-color: #333333;
+}
+body.amoled-mode .settings-item:hover { background: #222222; }
+body.amoled-mode .settings-item .si-arrow { color: #555555; }
+body.amoled-mode .settings-footer {
+  background: #000000;
+  border-top-color: #333333;
+  color: #555555;
+}
+
+/* মোবাইল */
+@media (max-width: 400px) {
+  .settings-panel {
+    width: 260px;
+  }
+  .settings-item {
+    padding: 14px 16px;
+    font-size: 14px;
+  }
+}
+/* ============================================================
+   🆕 ডার্ক ও AMOLED মোডে টেবিলের সংখ্যার উজ্জ্বল রঙ
+   ============================================================ */
+
+/* ডার্ক মোডে */
+body.dark-mode td.amount-cell { color: #60A5FA !important; }
+body.dark-mode td.cash-cell   { color: #34D399 !important; }
+body.dark-mode td.bkash-cell  { color: #F472B6 !important; }
+body.dark-mode td.due-cell    { color: #FB923C !important; }
+body.dark-mode td.paid-cell   { color: #34D399 !important; }
+body.dark-mode td.cost-cell   { color: #F87171 !important; }
+
+body.dark-mode td.shop-name-cell { color: #34D399 !important; }
+body.dark-mode td.customer-cell  { color: #A78BFA !important; }
+body.dark-mode td.seller-cell    { color: #A78BFA !important; }
+body.dark-mode td.shopname-cell  { color: #2DD4BF !important; }
+
+/* AMOLED মোডে (আরও উজ্জ্বল, কারণ ব্যাকগ্রাউন্ড একদম কালো) */
+body.amoled-mode td.amount-cell { color: #93C5FD !important; }
+body.amoled-mode td.cash-cell   { color: #6EE7B7 !important; }
+body.amoled-mode td.bkash-cell  { color: #F9A8D4 !important; }
+body.amoled-mode td.due-cell    { color: #FDBA74 !important; }
+body.amoled-mode td.paid-cell   { color: #6EE7B7 !important; }
+body.amoled-mode td.cost-cell   { color: #FCA5A5 !important; }
+
+body.amoled-mode td.shop-name-cell { color: #6EE7B7 !important; }
+body.amoled-mode td.customer-cell  { color: #C4B5FD !important; }
+body.amoled-mode td.seller-cell    { color: #C4B5FD !important; }
+body.amoled-mode td.shopname-cell  { color: #5EEAD4 !important; }

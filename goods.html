@@ -20,6 +20,7 @@
   <div class="header" style="background:linear-gradient(135deg,#0F766E 0%,#14B8A6 100%);box-shadow:0 2px 12px rgba(15,118,110,0.2);">
     <button class="back-btn" onclick="goHomePage()">←</button>
     <h1>মালামাল ক্রয়ের হিসাব</h1>
+	<button class="header-icon-btn" id="headerMathHintBtn" onclick="toggleMathHint(); updateHeaderHintBtn();" title="হিন্ট চালু/বন্ধ" style="font-size: 16px;">💡 Hint</button>
   </div>
 
   <!-- FORM TAB -->
@@ -50,28 +51,28 @@
 
       <div class="form-group">
         <label>মূল্য <span class="req">*</span></label>
-        <input type="number" id="fPrice" placeholder="0" min="0" step="0.01" inputmode="decimal">
+        <input type="text" id="fPrice" placeholder="0" inputmode="decimal" autocomplete="off">
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>নগদ</label>
-          <input type="number" id="fCash" placeholder="0" min="0" step="0.01" inputmode="decimal">
+          <input type="text" id="fCash" placeholder="0" inputmode="decimal" autocomplete="off">
         </div>
         <div class="form-group">
           <label>বাকি</label>
-          <input type="number" id="fDue" placeholder="0" min="0" step="0.01" inputmode="decimal">
+          <input type="text" id="fDue" placeholder="0" inputmode="decimal" autocomplete="off">
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>বাকি প্রদান</label>
-          <input type="number" id="fPaid" placeholder="0" min="0" step="0.01" inputmode="decimal">
+          <input type="text" id="fPaid" placeholder="0" inputmode="decimal" autocomplete="off">
         </div>
         <div class="form-group">
           <label>খরচ</label>
-          <input type="number" id="fCost" placeholder="0" min="0" step="0.01" inputmode="decimal">
+          <input type="text" id="fCost" placeholder="0" inputmode="decimal" autocomplete="off">
         </div>
       </div>
 

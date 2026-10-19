@@ -335,3 +335,250 @@ td.cost-cell {
     font-size: 10.5px;
   }
 }
+/* ============================================================
+   🆕 Seller Picker (বিক্রেতার নাম) — Indigo Theme
+   ============================================================ */
+
+.seller-picker {
+  position: relative;
+}
+
+.seller-trigger {
+  width: 100%;
+  padding: 13px 40px 13px 14px;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: inherit;
+  background: #F8FAFC;
+  color: #1E293B;
+  cursor: pointer;
+  text-align: left;
+  transition: 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+}
+.seller-trigger:focus {
+  outline: none;
+  border-color: #6366F1;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+.seller-trigger.placeholder {
+  color: #94A3B8;
+}
+.seller-trigger .arrow {
+  transition: transform 0.2s;
+  font-size: 12px;
+  color: #64748B;
+}
+.seller-trigger.open .arrow {
+  transform: rotate(180deg);
+}
+
+.seller-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 50;
+  display: none;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.seller-panel.open { display: block; }
+
+.seller-search {
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  border-bottom: 1px solid #E2E8F0;
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+  outline: none;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.seller-search:focus {
+  background: #F8FAFC;
+}
+
+.seller-list {
+  padding: 6px 0;
+}
+
+.seller-item {
+  display: flex;
+  align-items: center;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #1E293B;
+  transition: 0.1s;
+  gap: 8px;
+}
+.seller-item:hover {
+  background: #EEF2FF;
+}
+.seller-item.selected {
+  background: #E0E7FF;
+  color: #4338CA;
+  font-weight: 600;
+}
+.seller-item-text {
+  flex: 1;
+}
+.seller-item-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: 0.15s;
+}
+.seller-item:hover .seller-item-actions {
+  opacity: 1;
+}
+.seller-item-actions button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  color: #475569;
+  font-family: inherit;
+  font-weight: 600;
+}
+.seller-item-actions button:hover {
+  background: #E2E8F0;
+}
+.seller-item-actions button.del:hover {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+.seller-item.manage-mode .seller-item-actions {
+  opacity: 1;
+}
+
+.seller-edit-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1.5px solid #6366F1;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+
+.seller-add {
+  border-top: 1px solid #E2E8F0;
+  padding: 12px 14px;
+  background: #F8FAFC;
+  position: sticky;
+  bottom: 0;
+}
+.seller-add-btn {
+  width: 100%;
+  padding: 10px;
+  background: #6366F1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.seller-add-btn:hover {
+  background: #4F46E5;
+}
+.seller-add-form {
+  display: none;
+  gap: 8px;
+}
+.seller-add-form.open {
+  display: flex;
+}
+.seller-add-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+.seller-add-form input:focus {
+  border-color: #6366F1;
+}
+.seller-add-form button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.seller-add-form .ok {
+  background: #6366F1;
+  color: white;
+}
+.seller-add-form .ok:hover {
+  background: #4F46E5;
+}
+.seller-add-form .no {
+  background: #E2E8F0;
+  color: #475569;
+}
+.seller-add-form .no:hover {
+  background: #CBD5E1;
+}
+
+.seller-manage-toggle {
+  background: transparent;
+  border: none;
+  color: #6366F1;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 14px;
+  font-family: inherit;
+  text-align: right;
+  width: 100%;
+}
+.seller-manage-toggle:hover {
+  text-decoration: underline;
+}
+
+/* টেবিলে বিক্রেতা সেল */
+td.seller-cell {
+  font-weight: 600;
+  color: #6366F1;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* মোবাইল */
+@media (max-width: 400px) {
+  .seller-trigger {
+    font-size: 14px;
+    padding: 12px 36px 12px 12px;
+  }
+  .seller-item {
+    font-size: 13.5px;
+    padding: 10px 12px;
+  }
+}

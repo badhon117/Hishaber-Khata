@@ -9,14 +9,21 @@
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="stylesheet" href="css/common.css">
 <style>
+    .about-logo {
+    width: 90px;      /* কন্টেইনার একটু বড় করা হলো */
+    height: 90px;
+    margin: 0 auto 16px auto;
+    overflow: hidden; /* বাইরের অংশ কাটার জন্য */
+    border-radius: 20px;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
   .about-logo img {
-    width: 100px;
-    height: auto;
-    object-fit: contain; /* এটি লোগোর অনুপাত ঠিক রাখবে */
-    display: inline-block;
-    border-radius: 22px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* হালকা শ্যাডো */
-    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.3); /* লোগো ভেতরে জুম করে সাদা অংশ কমানো হলো */
+    border-radius: 20px;
   }
   .about-header {
     text-align: center;
@@ -304,7 +311,7 @@
     } 
     else if (method === 'email') {
       // 🚨 এখানে আপনার ইমেইল অ্যাড্রেস দিন
-      const yourEmail = "nishatbadhon117@gmail.com.com";
+      const yourEmail = "nishatbadhon117@gmail.com";
       const subject = encodeURIComponent("Hisaber Khata App Feedback (" + currentRating + " Stars)");
       const body = encodeURIComponent(message);
       const mailtoLink = `mailto:${yourEmail}?subject=${subject}&body=${body}`;

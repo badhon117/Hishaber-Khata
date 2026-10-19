@@ -23,7 +23,7 @@
 <div class="app">
   <div class="header">
     <h1>হিসাবের খাতা</h1>
-   
+	  <button class="header-icon-btn" onclick="openSettingsMenu()" title="সেটিংস">⚙️</button>
     <button class="header-icon-btn" onclick="openMenu()" title="মেনু">⋮</button>
   </div>
 
@@ -71,11 +71,9 @@
     <button class="menu-close" onclick="closeMenu()">✕</button>
   </div>
   <div class="menu-list">
-	      <button class="menu-item" onclick="openThemeModal()">
-      <span class="mi-icon">🎨</span>
-      <span>থিম পরিবর্তন করুন</span>
-    </button>
-    <button class="menu-item" id="loginBtn" onclick="handleGoogleLogin();">
+	     
+     
+    <button class="menu-item" id="loginBtn" onclick="closeMenu(); handleGoogleLogin();">
       <span class="mi-icon">☁️</span>
       <span id="loginBtnText">Google Drive-এ সিঙ্ক করুন</span>
     </button>
@@ -102,6 +100,32 @@
       <span class="mi-icon">ℹ️</span>
       <span>অ্যাপ সম্পর্কে</span>
     </button>
+  </div>
+</div>
+</div>
+
+<!-- ========== 🆕 সেটিংস প্যানেল ========== -->
+<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target === this) closeSettingsMenu()"></div>
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-header">
+    <h3>⚙️ সেটিংস</h3>
+    <button class="settings-close" onclick="closeSettingsMenu()">✕</button>
+  </div>
+  <div class="settings-list">
+    <button class="settings-item" onclick="closeSettingsMenu(); openThemeModal();">
+      <span class="si-icon">🎨</span>
+      <span class="si-text">থিম পরিবর্তন করুন</span>
+      <span class="si-arrow">›</span>
+    </button>
+    
+    <button class="settings-item" id="mathHintToggleBtn" onclick="toggleMathHint();">
+      <span class="si-icon">💡</span>
+      <span class="si-text">হিসাবের হিন্ট বন্ধ করুন</span>
+      <span class="si-arrow">›</span>
+    </button>
+  </div>
+  <div class="settings-footer">
+    হিসাবের খাতা • সংস্করণ ২.০
   </div>
 </div>
 
@@ -171,6 +195,10 @@ function hideComingSoon() {
   document.getElementById('comingSoonScreen').classList.add('hidden');
   document.querySelector('.screen').classList.remove('hidden');
 }
+// 🆕 পেজ লোডে মেনু আইকন আপডেট
+document.addEventListener('DOMContentLoaded', () => {
+  updateMathHintMenuUI();
+});
 </script>
 <!-- ========== THEME MODAL ========== -->
 <div class="theme-modal-overlay" id="themeModalOverlay" onclick="if(event.target === this) closeThemeModal()">
@@ -192,5 +220,6 @@ function hideComingSoon() {
     <button class="sheet-cancel" onclick="closeThemeModal()" style="margin-top: 15px;">বাতিল করুন</button>
   </div>
 </div>
+
 </body>
 </html>

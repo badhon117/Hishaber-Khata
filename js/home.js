@@ -340,8 +340,21 @@ function updateAmountHint() {
   }
 }
 
+// 🆕 Save করার আগে সব ম্যাথ ফিল্ড evaluate করি
+function evaluateAllMathFields() {
+  const ids = ['fAmount', 'fCash', 'fBkash', 'fPrice', 'fDue', 'fReceived', 'fCost', 'fPaid'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && typeof evaluateMathField === 'function') {
+      evaluateMathField(el);
+    }
+  });
+}
+
+
 /* ---------- Save / Delete ---------- */
 function saveEntry() {
+	evaluateAllMathFields();   // 🆕 ম্যাথ আগে evaluate করি
   const id = document.getElementById('editId').value;
   const date = document.getElementById('fDate').value;
   const category = currentCategory;
@@ -373,7 +386,9 @@ function saveEntry() {
       createdAt: Date.now()
     });
     showToast('সেভ হয়েছে', 'success');
+	incrementEntryCount();  // 🆕 এই লাইন
   }
+  
   saveData();
   startNewEntry();
   renderMonthOptions();

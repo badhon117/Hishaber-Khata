@@ -5,15 +5,19 @@
 /* ---------- Storage Keys ---------- */
 const STORAGE_KEY = 'hisaber_khata_shop_v1';
 const SHOP_KEY = 'hisaber_khata_shops_v1';
+const SELLER_KEY = 'hisaber_khata_sellers_v1';   // 🆕
 const DEFAULT_SHOPS = ['জারা ফ্যাশন', 'জারা স্পোর্টস'];
 
 /* ---------- State ---------- */
 let entries = [];
 let shops = [];
+let sellers = [];                                // 🆕
 let currentShop = '';
+let currentSeller = '';                          // 🆕
 let isSelectMode = false;
 let selectedIds = new Set();
 let shopManageMode = false;
+let sellerManageMode = false;                    // 🆕
 
 /* ============================================================
    Storage Load / Save
@@ -26,6 +30,10 @@ function loadData() {
   if (!Array.isArray(shops) || shops.length === 0) {
     shops = DEFAULT_SHOPS.slice();
   }
+
+  // 🆕 বিক্রেতা — সম্পূর্ণ খালি থেকে শুরু
+  sellers = loadFromStorage(SELLER_KEY, []);
+  if (!Array.isArray(sellers)) sellers = [];
 }
 
 function saveData() {
@@ -34,6 +42,10 @@ function saveData() {
 
 function saveShops() {
   saveToStorage(SHOP_KEY, shops);
+}
+
+function saveSellers() {                          // 🆕
+  saveToStorage(SELLER_KEY, sellers);
 }
 
 /**
@@ -68,6 +80,7 @@ function switchTab(which) {
     fab.classList.add('show');
     renderMonthOptions();
     refreshShopDropdowns();
+	refreshSellerDropdowns();      // 🆕
     renderTable();
   }
 }
@@ -277,6 +290,196 @@ function refreshShopDropdowns() {
 }
 
 /* ============================================================
+   🆕 Seller Picker
+   ============================================================ */
+function toggleSellerPanel(e) {
+  if (e) e.stopPropagation();
+  const panel = document.getElementById('sellerPanel');
+  const trigger = document.getElementById('sellerTrigger');
+  if (panel.classList.contains('open')) {
+    closeSellerPanel();
+  } else {
+    panel.classList.add('open');
+    trigger.classList.add('open');
+    document.getElementById('sellerSearch').value = '';
+    renderSellerList();
+    setTimeout(() => document.getElementById('sellerSearch').focus(), 100);
+  }
+}
+
+function closeSellerPanel() {
+  const panel = document.getElementById('sellerPanel');
+  const trigger = document.getElementById('sellerTrigger');
+  const addForm = document.getElementById('sellerAddForm');
+  const addBtn = document.getElementById('sellerAddBtn');
+  if (panel) panel.classList.remove('open');
+  if (trigger) trigger.classList.remove('open');
+  if (addForm) addForm.classList.remove('open');
+  if (addBtn) addBtn.style.display = 'flex';
+  sellerManageMode = false;
+}
+
+document.addEventListener('click', e => {
+  const picker = document.querySelector('.seller-picker');
+  if (picker && !picker.contains(e.target)) closeSellerPanel();
+});
+
+function renderSellerList() {
+  const q = (document.getElementById('sellerSearch').value || '').toLowerCase().trim();
+  const list = document.getElementById('sellerList');
+  const filtered = sellers.filter(s => !q || s.toLowerCase().includes(q));
+
+  let html = '';
+  if (sellerManageMode) {
+    html += `<button type="button" class="seller-manage-toggle" onclick="toggleSellerManageMode()">✓ ম্যানেজ মোড বন্ধ করুন</button>`;
+  } else {
+    html += `<button type="button" class="seller-manage-toggle" onclick="toggleSellerManageMode()">⚙ এডিট/ডিলিট করুন</button>`;
+  }
+
+  if (filtered.length === 0) {
+    html += `<div style="padding:16px;text-align:center;color:#94A3B8;font-size:13px;">কোনো বিক্রেতা পাওয়া যায়নি</div>`;
+  } else {
+    html += filtered.map(s => {
+      const sel = (s === currentSeller) ? ' selected' : '';
+      const manage = sellerManageMode ? ' manage-mode' : '';
+      const safeS = escapeAttr(s);
+      return `
+        <div class="seller-item${sel}${manage}" data-seller="${escapeHtml(s)}" onclick="selectSeller(event, '${safeS}')">
+          <span class="seller-item-text">${escapeHtml(s)}</span>
+          <span class="seller-item-actions">
+            <button type="button" onclick="startEditSeller(event, '${safeS}')">এডিট</button>
+            <button type="button" class="del" onclick="deleteSeller(event, '${safeS}')">ডিলিট</button>
+          </span>
+        </div>
+      `;
+    }).join('');
+  }
+  list.innerHTML = html;
+}
+
+function toggleSellerManageMode() {
+  sellerManageMode = !sellerManageMode;
+  renderSellerList();
+}
+
+function selectSeller(e, seller) {
+  if (e) e.stopPropagation();
+  currentSeller = seller;
+  document.getElementById('sellerTriggerText').textContent = seller;
+  document.getElementById('sellerTrigger').classList.remove('placeholder');
+  closeSellerPanel();
+}
+
+function startEditSeller(e, seller) {
+  e.stopPropagation();
+  const item = e.target.closest('.seller-item');
+  const oldText = item.querySelector('.seller-item-text');
+  const actions = item.querySelector('.seller-item-actions');
+  oldText.style.display = 'none';
+  if (actions) actions.style.display = 'none';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'seller-edit-input';
+  input.value = seller;
+  item.insertBefore(input, oldText.nextSibling);
+  input.focus();
+  input.select();
+
+  const finish = (save) => {
+    if (save) {
+      const newName = input.value.trim();
+      if (newName && newName !== seller) {
+        if (sellers.includes(newName)) {
+          showToast('এই বিক্রেতা ইতিমধ্যে আছে', 'error');
+        } else {
+          const idx = sellers.indexOf(seller);
+          if (idx >= 0) sellers[idx] = newName;
+          // পুরোনো entries-এ বিক্রেতার নাম আপডেট
+          entries.forEach(en => { if (en.seller === seller) en.seller = newName; });
+          if (currentSeller === seller) {
+            currentSeller = newName;
+            document.getElementById('sellerTriggerText').textContent = newName;
+          }
+          saveSellers();
+          saveData();
+          refreshSellerDropdowns();
+          showToast('বিক্রেতা আপডেট হয়েছে', 'success');
+        }
+      }
+    }
+    renderSellerList();
+  };
+
+  input.onblur = () => finish(true);
+  input.onkeydown = (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+    if (ev.key === 'Escape') { ev.preventDefault(); input.onblur = null; finish(false); }
+  };
+}
+
+function deleteSeller(e, seller) {
+  e.stopPropagation();
+  const used = entries.filter(en => en.seller === seller).length;
+  let msg = `"${seller}" বিক্রেতাটি ডিলিট করবেন?`;
+  if (used > 0) msg += `\n\n${toBn(used)}টি এন্ট্রিতে এই বিক্রেতা ব্যবহৃত আছে।`;
+  if (!askConfirm(msg)) return;
+
+  sellers = sellers.filter(s => s !== seller);
+  saveSellers();
+  if (currentSeller === seller) {
+    currentSeller = '';
+    document.getElementById('sellerTriggerText').textContent = '-- নির্বাচন করুন --';
+    document.getElementById('sellerTrigger').classList.add('placeholder');
+  }
+  refreshSellerDropdowns();
+  renderSellerList();
+  showToast('বিক্রেতা ডিলিট হয়েছে', 'success');
+}
+
+function showAddSellerForm(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('sellerAddBtn').style.display = 'none';
+  document.getElementById('sellerAddForm').classList.add('open');
+  const inp = document.getElementById('sellerNewInput');
+  inp.value = '';
+  setTimeout(() => inp.focus(), 100);
+}
+
+function hideAddSellerForm(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('sellerAddForm').classList.remove('open');
+  document.getElementById('sellerAddBtn').style.display = 'flex';
+}
+
+function addNewSeller() {
+  const inp = document.getElementById('sellerNewInput');
+  const name = inp.value.trim();
+  if (!name) { showToast('বিক্রেতার নাম লিখুন', 'error'); return; }
+  if (sellers.includes(name)) { showToast('এই বিক্রেতা ইতিমধ্যে আছে', 'error'); return; }
+
+  sellers.push(name);
+  saveSellers();
+  currentSeller = name;
+  document.getElementById('sellerTriggerText').textContent = name;
+  document.getElementById('sellerTrigger').classList.remove('placeholder');
+  document.getElementById('sellerAddForm').classList.remove('open');
+  document.getElementById('sellerAddBtn').style.display = 'flex';
+  refreshSellerDropdowns();
+  closeSellerPanel();
+  showToast('নতুন বিক্রেতা যোগ হয়েছে', 'success');
+}
+
+function refreshSellerDropdowns() {
+  const sel = document.getElementById('filterSeller');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">সব বিক্রেতা</option>' +
+    sellers.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  if (sellers.includes(current)) sel.value = current;
+}
+
+/* ============================================================
    Form Logic
    ============================================================ */
 function startNewEntry() {
@@ -285,6 +488,10 @@ function startNewEntry() {
   currentShop = '';
   document.getElementById('shopTriggerText').textContent = '-- নির্বাচন করুন --';
   document.getElementById('shopTrigger').classList.add('placeholder');
+  // 🆕 বিক্রেতা রিসেট
+  currentSeller = '';
+  document.getElementById('sellerTriggerText').textContent = '-- নির্বাচন করুন --';
+  document.getElementById('sellerTrigger').classList.add('placeholder');
   document.getElementById('fCustomer').value = '';
   document.getElementById('fDescription').value = '';
   document.getElementById('fPrice').value = '';
@@ -320,6 +527,11 @@ function editEntry(id) {
   document.getElementById('shopTriggerText').textContent = e.shop || '-- নির্বাচন করুন --';
   if (e.shop) document.getElementById('shopTrigger').classList.remove('placeholder');
   else document.getElementById('shopTrigger').classList.add('placeholder');
+   // 🆕 বিক্রেতা সেট
+  currentSeller = e.seller || '';
+  document.getElementById('sellerTriggerText').textContent = e.seller || '-- নির্বাচন করুন --';
+  if (e.seller) document.getElementById('sellerTrigger').classList.remove('placeholder');
+  else document.getElementById('sellerTrigger').classList.add('placeholder');
   document.getElementById('fCustomer').value = e.customer || '';
   document.getElementById('fDescription').value = e.description || '';
   document.getElementById('fPrice').value = e.price || '';
@@ -344,10 +556,23 @@ function updateDateBn() {
 }
 
 /* ---------- Save / Delete ---------- */
+// 🆕 Save করার আগে সব ম্যাথ ফিল্ড evaluate করি
+function evaluateAllMathFields() {
+  const ids = ['fAmount', 'fCash', 'fBkash', 'fPrice', 'fDue', 'fReceived', 'fCost', 'fPaid'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && typeof evaluateMathField === 'function') {
+      evaluateMathField(el);
+    }
+  });
+}
+
 function saveEntry() {
+	 evaluateAllMathFields();   // 🆕
   const id = document.getElementById('editId').value;
   const date = document.getElementById('fDate').value;
   const shop = currentShop;
+  const seller = currentSeller;                          // 🆕
   const customer = document.getElementById('fCustomer').value.trim();
   const description = document.getElementById('fDescription').value.trim();
   const price = parseFloat(document.getElementById('fPrice').value) || 0;
@@ -364,16 +589,17 @@ function saveEntry() {
   if (id) {
     const idx = entries.findIndex(x => x.id === id);
     if (idx >= 0) {
-      entries[idx] = { ...entries[idx], date, shop, customer, description, price, cash, due, received, cost, note };
+      entries[idx] = { ...entries[idx], date, shop, seller, customer, description, price, cash, due, received, cost, note };
       showToast('আপডেট হয়েছে', 'success');
     }
   } else {
-    entries.push({
+        entries.push({
       id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-      date, shop, customer, description, price, cash, due, received, cost, note,
+      date, shop, seller, customer, description, price, cash, due, received, cost, note,
       createdAt: Date.now()
     });
     showToast('সেভ হয়েছে', 'success');
+	incrementEntryCount();  // 🆕 এই লাইন
   }
   saveData();
   startNewEntry();
@@ -398,6 +624,7 @@ function getFiltered() {
   const search = document.getElementById('searchBox').value.toLowerCase().trim();
   const month = document.getElementById('filterMonth').value;
   const fshop = document.getElementById('filterShop').value;
+  const fseller = document.getElementById('filterSeller') ? document.getElementById('filterSeller').value : ''; // 🆕
   const fcustomer = document.getElementById('filterCustomer').value.toLowerCase().trim();
   const onlyDup = document.getElementById('filterDuplicate').checked;
   const sortBy = document.getElementById('sortBy').value;
@@ -406,6 +633,7 @@ function getFiltered() {
 
   if (month) list = list.filter(e => e.date.startsWith(month));
   if (fshop) list = list.filter(e => e.shop === fshop);
+  if (fseller) list = list.filter(e => e.seller === fseller);   // 🆕 নতুন লাইন
   if (fcustomer) list = list.filter(e => (e.customer || '').toLowerCase().includes(fcustomer));
 
   if (search) {
@@ -438,6 +666,7 @@ function getFiltered() {
     else if (field === 'price') cmp = (a.price || 0) - (b.price || 0);
     else if (field === 'due') cmp = (a.due || 0) - (b.due || 0);
     else if (field === 'customer') cmp = (a.customer || '').localeCompare(b.customer || '');
+	else if (field === 'seller') cmp = (a.seller || '').localeCompare(b.seller || '');   // 🆕
     else if (field === 'shop') cmp = (a.shop || '').localeCompare(b.shop || '');
     return dir === 'desc' ? -cmp : cmp;
   });
@@ -467,6 +696,7 @@ function renderTable() {
       ? `<td class="checkbox-cell"><input type="checkbox" ${checked} onclick="event.stopPropagation(); toggleRowSelect('${e.id}', this.checked)"></td>`
       : '';
     const noteText = e.note ? escapeHtml(e.note) : '—';
+	const sellerText = e.seller ? escapeHtml(e.seller) : '—';      // 🆕
     const customerText = e.customer ? escapeHtml(e.customer) : '—';
     const descText = e.description ? escapeHtml(e.description) : '—';
     const rowClick = isSelectMode
@@ -477,7 +707,8 @@ function renderTable() {
         ${cbCell}
         <td>${formatDateBn(e.date)}</td>
         <td class="shop-name-cell">${escapeHtml(e.shop)}</td>
-        <td class="customer-cell">${customerText}</td>
+        <td class="seller-cell">${sellerText}</td>      <!-- 🆕 -->
+		<td class="customer-cell">${customerText}</td>
         <td class="desc-cell">${descText}</td>
         <td class="amount-cell">${formatTaka(e.price)}</td>
         <td class="cash-cell">${formatTaka(e.cash)}</td>
@@ -616,10 +847,10 @@ function exportCSV() {
     return;
   }
 
-  const rows = [['তারিখ', 'দোকান', 'ক্রয়কারী', 'বিবরণ', 'মূল্য', 'নগদ', 'বাকি', 'বাকি প্রাপ্ত', 'খরচ', 'মন্তব্য']];
+    const rows = [['তারিখ', 'দোকান', 'বিক্রয়কারী', 'ক্রয়কারী', 'বিবরণ', 'মূল্য', 'নগদ', 'বাকি', 'বাকি প্রাপ্ত', 'খরচ', 'মন্তব্য']];
   list.forEach(e => {
     rows.push([
-      formatDateBn(e.date), e.shop || '', e.customer || '', e.description || '',
+      formatDateBn(e.date), e.shop || '', e.seller || '', e.customer || '', e.description || '',
       e.price || 0, e.cash || 0, e.due || 0, e.received || 0, e.cost || 0, e.note || ''
     ]);
   });
@@ -669,6 +900,7 @@ function closeChartModal() {
 function populateChartFilters() {
   const monthSelect = document.getElementById('chartMonth');
   const yearSelect = document.getElementById('chartYear');
+  const shopSelect = document.getElementById('chartShop');   // 🆕
   
   if (!monthSelect || !yearSelect) return;
 
@@ -697,17 +929,101 @@ function populateChartFilters() {
   const sortedYears = Array.from(years).sort().reverse();
   yearSelect.innerHTML = '<option value="">-- বছর --</option>' + 
     sortedYears.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${toBn(y)}</option>`).join('');
+
+  // 🆕 দোকানের তালিকা
+  if (shopSelect) {
+    const currentShopValue = shopSelect.value;
+    const shopSet = new Set();
+    entries.forEach(e => {
+      if (e.shop) shopSet.add(e.shop);
+    });
+    const sortedShops = Array.from(shopSet).sort();
+    shopSelect.innerHTML = '<option value="">-- সব দোকান (তুলনা) --</option>' +
+      sortedShops.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    if (sortedShops.includes(currentShopValue)) shopSelect.value = currentShopValue;
+  }
 }
 
 function renderChart() {
   const month = document.getElementById('chartMonth').value;
   const year = document.getElementById('chartYear').value;
+  const selectedShop = document.getElementById('chartShop') ? document.getElementById('chartShop').value : '';   // 🆕
   
   if (!month || !year) return;
 
   const filtered = entries.filter(e => e.date.startsWith(`${year}-${month}`));
   
-  // দোকান অনুযায়ী ৪টি ডেটা গ্রুপ করা
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+
+  const ctx = document.getElementById('myChart').getContext('2d');
+
+  // 🆕 ============ একক দোকান মোড ============
+  if (selectedShop) {
+    const shopEntries = filtered.filter(e => e.shop === selectedShop);
+    
+    const totalSales = shopEntries.reduce((s, e) => s + (Number(e.price) || 0), 0);
+    const totalDue = shopEntries.reduce((s, e) => s + (Number(e.due) || 0), 0);
+    const totalReceived = shopEntries.reduce((s, e) => s + (Number(e.received) || 0), 0);
+    const totalCost = shopEntries.reduce((s, e) => s + (Number(e.cost) || 0), 0);
+
+    if (shopEntries.length === 0) {
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['এই মাসে কোনো ডেটা নেই'],
+          datasets: [{ data: [0], backgroundColor: '#CBD5E1' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+      return;
+    }
+
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['মোট বিক্রয়', 'মোট বাকি', 'মোট বাকি প্রাপ্ত', 'মোট খরচ'],
+        datasets: [{
+          label: selectedShop,
+          data: [totalSales, totalDue, totalReceived, totalCost],
+          backgroundColor: ['#3B82F6', '#F97316', '#10B981', '#DC2626'],
+          borderRadius: 6,
+          barPercentage: 0.6,
+          categoryPercentage: 0.7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: selectedShop + ' — ' + getBnMonth(parseInt(month)) + ' ' + toBn(year),
+            font: { family: 'Noto Sans Bengali', size: 13, weight: 'bold' },
+            color: '#047857',
+            padding: { bottom: 10 }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { 
+              callback: function(value) { return '৳' + value; }, 
+              font: { family: 'Noto Sans Bengali' } 
+            }
+          },
+          x: { 
+            ticks: { font: { family: 'Noto Sans Bengali', size: 11 } } 
+          }
+        }
+      }
+    });
+    return;
+  }
+
+  // ============ সব দোকান মোড (তুলনা) — আগের মতোই ============
   const shopData = {};
   filtered.forEach(e => {
     const shop = e.shop || 'অন্যান্য';
@@ -720,20 +1036,13 @@ function renderChart() {
     shopData[shop].cost += (Number(e.cost) || 0);
   });
 
-  const labels = Object.keys(shopData); // দোকানের নাম
+  const labels = Object.keys(shopData);
   
   const salesData = labels.map(s => shopData[s].sales);
   const dueData = labels.map(s => shopData[s].due);
   const receivedData = labels.map(s => shopData[s].received);
   const costData = labels.map(s => shopData[s].cost);
 
-  if (chartInstance) {
-    chartInstance.destroy();
-  }
-
-  const ctx = document.getElementById('myChart').getContext('2d');
-  
-  // যদি কোনো ডেটা না থাকে
   if (labels.length === 0) {
     chartInstance = new Chart(ctx, {
       type: 'bar',
@@ -746,7 +1055,6 @@ function renderChart() {
     return;
   }
 
-  // ৪টি বার-সহ গ্রুপড চার্ট তৈরি
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -755,33 +1063,33 @@ function renderChart() {
         {
           label: 'মোট বিক্রয়',
           data: salesData,
-          backgroundColor: '#3B82F6', // নীল
+          backgroundColor: '#3B82F6',
           borderRadius: 4,
-		  barPercentage: 0.6,
+          barPercentage: 0.6,
           categoryPercentage: 0.7
         },
         {
           label: 'মোট বাকি',
           data: dueData,
-          backgroundColor: '#F97316', // কমলা
+          backgroundColor: '#F97316',
           borderRadius: 4,
-		            barPercentage: 0.6,
+          barPercentage: 0.6,
           categoryPercentage: 0.7
         },
         {
           label: 'মোট বাকি প্রাপ্ত',
           data: receivedData,
-          backgroundColor: '#10B981', // সবুজ
+          backgroundColor: '#10B981',
           borderRadius: 4,
-		            barPercentage: 0.6,
+          barPercentage: 0.6,
           categoryPercentage: 0.7
         },
         {
           label: 'মোট খরচ',
           data: costData,
-          backgroundColor: '#DC2626', // লাল
+          backgroundColor: '#DC2626',
           borderRadius: 4,
-		            barPercentage: 0.6,
+          barPercentage: 0.6,
           categoryPercentage: 0.7
         }
       ]
@@ -791,7 +1099,7 @@ function renderChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: { 
-          display: true, // লিজেন্ড দেখাবে (যাতে বোঝা যায় কোন রঙ কী)
+          display: true,
           position: 'bottom',
           labels: {
             font: { family: 'Noto Sans Bengali', size: 11 },
