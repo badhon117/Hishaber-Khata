@@ -1,5 +1,5 @@
 /* ============================================================
-   হিসাবের খাতা — Shop (দোকানের হিসাব) Module
+   হিসাবের খাতা — Shop (দোকানের হিসাব) Module (Fixed & Secured)
    ============================================================ */
 
 /* ---------- Storage Keys ---------- */
@@ -22,6 +22,21 @@ let sellerManageMode = false;                    // 🆕
 /* ============================================================
    Storage Load / Save
    ============================================================ */
+function loadData() {
+  entries = loadFromStorage(STORAGE_KEY, []);
+  if (!Array.isArray(entries)) entries = [];
+
+  shops = loadFromStorage(SHOP_KEY, null);
+  if (!Array.isArray(shops) || shops.length === 0) {
+    shops = DEFAULT_SHOPS.slice();
+    saveShops();
+  }
+
+  // 🆕 বিক্রেতা — সম্পূর্ণ খালি থেকে শুরু
+  sellers = loadFromStorage(SELLER_KEY, []);
+  if (!Array.isArray(sellers)) sellers = [];
+}
+
 function saveData() {
   const success = saveToStorage(STORAGE_KEY, entries);
   if (!success) {
@@ -36,11 +51,18 @@ function saveShops() {
   }
 }
 
-function saveSellers() {
+function saveSellers() {                          // 🆕
   const success = saveToStorage(SELLER_KEY, sellers);
   if (!success) {
     throw new Error('STORAGE_WRITE_FAILED');
   }
+}
+
+/**
+ * ডিফল্ট দোকান কি না
+ */
+function isDefaultShop(name) {
+  return DEFAULT_SHOPS.includes(name);
 }
 
 /* ============================================================
@@ -78,6 +100,7 @@ function switchTab(which) {
    ============================================================ */
 function toggleShopPanel(e) {
   if (e) e.stopPropagation();
+  closeSellerPanel(); // বিক্রেতার প্যানেল খোলা থাকলে বন্ধ করে দেব
   const panel = document.getElementById('shopPanel');
   const trigger = document.getElementById('shopTrigger');
   if (panel.classList.contains('open')) {
@@ -128,7 +151,6 @@ function renderShopList() {
       const manage = shopManageMode ? ' manage-mode' : '';
       const safeS = escapeAttr(s);
       const isDefault = isDefaultShop(s);
-      // ডিফল্ট দোকানের জন্য কোনো এডিট/ডিলিট বাটন দেখাব না
       const actionsHtml = isDefault ? '' : `
         <span class="shop-item-actions">
           <button type="button" onclick="startEditShop(event, '${safeS}')">এডিট</button>
@@ -161,7 +183,6 @@ function selectShop(e, shop) {
 
 function startEditShop(e, shop) {
   e.stopPropagation();
-  // ডিফল্ট দোকান এডিট করা যাবে না
   if (isDefaultShop(shop)) {
     showToast('ডিফল্ট দোকান এডিট করা যাবে না', 'error');
     return;
@@ -185,7 +206,7 @@ function startEditShop(e, shop) {
     if (save) {
       const newName = input.value.trim();
       if (newName && newName !== shop) {
-        if (shops.includes(newName)) {
+        if (shops.some(s => s.toLowerCase() === newName.toLowerCase())) {
           showToast('এই দোকান ইতিমধ্যে আছে', 'error');
         } else {
           const idx = shops.indexOf(shop);
@@ -197,6 +218,7 @@ function startEditShop(e, shop) {
           }
           saveShops();
           saveData();
+          refreshShopDropdowns();
           showToast('দোকান আপডেট হয়েছে', 'success');
         }
       }
@@ -253,17 +275,30 @@ function hideAddShopForm(e) {
 function addNewShop() {
   const inp = document.getElementById('shopNewInput');
   const name = inp.value.trim();
-  if (!name) { showToast('দোকানের নাম লিখুন', 'error'); return; }
-  if (shops.includes(name)) { showToast('এই দোকান ইতিমধ্যে আছে', 'error'); return; }
+  
+  if (!name) { 
+    showToast('দোকানের নাম লিখুন', 'error'); 
+    return; 
+  }
+  
+  // একই নাম আগে থেকে আছে কি না কেস-ইনসেন্সিটিভ চেক
+  if (shops.some(s => s.toLowerCase() === name.toLowerCase())) { 
+    showToast('এই দোকান ইতিমধ্যে আছে', 'error'); 
+    return; 
+  }
 
   shops.push(name);
   saveShops();
+  
   currentShop = name;
   document.getElementById('shopTriggerText').textContent = name;
   document.getElementById('shopTrigger').classList.remove('placeholder');
+  
   document.getElementById('shopAddForm').classList.remove('open');
   document.getElementById('shopAddBtn').style.display = 'flex';
+  
   refreshShopDropdowns();
+  renderShopList();
   closeShopPanel();
   showToast('নতুন দোকান যোগ হয়েছে', 'success');
 }
@@ -282,6 +317,7 @@ function refreshShopDropdowns() {
    ============================================================ */
 function toggleSellerPanel(e) {
   if (e) e.stopPropagation();
+  closeShopPanel(); // দোকানের প্যানেল খোলা থাকলে বন্ধ করে দেব
   const panel = document.getElementById('sellerPanel');
   const trigger = document.getElementById('sellerTrigger');
   if (panel.classList.contains('open')) {
@@ -378,12 +414,11 @@ function startEditSeller(e, seller) {
     if (save) {
       const newName = input.value.trim();
       if (newName && newName !== seller) {
-        if (sellers.includes(newName)) {
+        if (sellers.some(s => s.toLowerCase() === newName.toLowerCase())) {
           showToast('এই বিক্রেতা ইতিমধ্যে আছে', 'error');
         } else {
           const idx = sellers.indexOf(seller);
           if (idx >= 0) sellers[idx] = newName;
-          // পুরোনো entries-এ বিক্রেতার নাম আপডেট
           entries.forEach(en => { if (en.seller === seller) en.seller = newName; });
           if (currentSeller === seller) {
             currentSeller = newName;
@@ -444,7 +479,7 @@ function addNewSeller() {
   const inp = document.getElementById('sellerNewInput');
   const name = inp.value.trim();
   if (!name) { showToast('বিক্রেতার নাম লিখুন', 'error'); return; }
-  if (sellers.includes(name)) { showToast('এই বিক্রেতা ইতিমধ্যে আছে', 'error'); return; }
+  if (sellers.some(s => s.toLowerCase() === name.toLowerCase())) { showToast('এই বিক্রেতা ইতিমধ্যে আছে', 'error'); return; }
 
   sellers.push(name);
   saveSellers();
@@ -476,7 +511,6 @@ function startNewEntry() {
   currentShop = '';
   document.getElementById('shopTriggerText').textContent = '-- নির্বাচন করুন --';
   document.getElementById('shopTrigger').classList.add('placeholder');
-  // 🆕 বিক্রেতা রিসেট
   currentSeller = '';
   document.getElementById('sellerTriggerText').textContent = '-- নির্বাচন করুন --';
   document.getElementById('sellerTrigger').classList.add('placeholder');
@@ -515,11 +549,12 @@ function editEntry(id) {
   document.getElementById('shopTriggerText').textContent = e.shop || '-- নির্বাচন করুন --';
   if (e.shop) document.getElementById('shopTrigger').classList.remove('placeholder');
   else document.getElementById('shopTrigger').classList.add('placeholder');
-   // 🆕 বিক্রেতা সেট
+  
   currentSeller = e.seller || '';
   document.getElementById('sellerTriggerText').textContent = e.seller || '-- নির্বাচন করুন --';
   if (e.seller) document.getElementById('sellerTrigger').classList.remove('placeholder');
   else document.getElementById('sellerTrigger').classList.add('placeholder');
+  
   document.getElementById('fCustomer').value = e.customer || '';
   document.getElementById('fDescription').value = e.description || '';
   document.getElementById('fPrice').value = e.price || '';
@@ -544,7 +579,6 @@ function updateDateBn() {
 }
 
 /* ---------- Save / Delete ---------- */
-// 🆕 Save করার আগে সব ম্যাথ ফিল্ড evaluate করি
 function evaluateAllMathFields() {
   const ids = ['fAmount', 'fCash', 'fBkash', 'fPrice', 'fDue', 'fReceived', 'fCost', 'fPaid'];
   ids.forEach(id => {
@@ -556,15 +590,15 @@ function evaluateAllMathFields() {
 }
 
 function saveEntry() {
-  // ১. সব ম্যাথ ফিল্ড আগে evaluate ও validate করি
-  const ids = ['fPrice', 'fCash', 'fDue', 'fReceived', 'fCost'];
-  for (const id of ids) {
+  // 🆕 প্রথমে সব ম্যাথ ফিল্ড evaluate করি — invalid হলে সেখানেই থামি
+  const mathIds = ['fPrice', 'fCash', 'fDue', 'fReceived', 'fCost'];
+  for (const id of mathIds) {
     const el = document.getElementById(id);
     if (el && typeof evaluateMathField === 'function') {
       const isValid = evaluateMathField(el);
       if (!isValid) {
         el.focus();
-        return;
+        return;   // 🛑 invalid হলে save হবে না
       }
     }
   }
@@ -582,15 +616,8 @@ function saveEntry() {
   const cost = parseFloat(document.getElementById('fCost').value) || 0;
   const note = document.getElementById('fNote').value.trim();
 
-  // ২. মৌলিক যাচাই
   if (!date) { showToast('তারিখ দিন', 'error'); return; }
   if (!shop) { showToast('দোকানের নাম নির্বাচন করুন', 'error'); return; }
-
-  // আর্থিক মানের বৈধতা পরীক্ষা (ঋণাত্মক হতে পারবে না)
-  if (price < 0 || cash < 0 || due < 0 || received < 0 || cost < 0) {
-    showToast('আর্থিক পরিমাণ ঋণাত্মক হতে পারে না', 'error');
-    return;
-  }
 
   try {
     if (id) {
@@ -610,11 +637,10 @@ function saveEntry() {
       showToast('সেভ হয়েছে', 'success');
       incrementEntryCount();
     }
-    
     startNewEntry();
     renderMonthOptions();
   } catch (err) {
-    console.error('Save shop entry failed:', err);
+    console.error('Save entry failed:', err);
     showToast('ডেটা সেভ করা যায়নি। স্টোরেজ পূর্ণ থাকতে পারে।', 'error');
   }
 }
@@ -637,7 +663,7 @@ function getFiltered() {
   const search = document.getElementById('searchBox').value.toLowerCase().trim();
   const month = document.getElementById('filterMonth').value;
   const fshop = document.getElementById('filterShop').value;
-  const fseller = document.getElementById('filterSeller') ? document.getElementById('filterSeller').value : ''; // 🆕
+  const fseller = document.getElementById('filterSeller') ? document.getElementById('filterSeller').value : '';
   const fcustomer = document.getElementById('filterCustomer').value.toLowerCase().trim();
   const onlyDup = document.getElementById('filterDuplicate').checked;
   const sortBy = document.getElementById('sortBy').value;
@@ -646,7 +672,7 @@ function getFiltered() {
 
   if (month) list = list.filter(e => e.date.startsWith(month));
   if (fshop) list = list.filter(e => e.shop === fshop);
-  if (fseller) list = list.filter(e => e.seller === fseller);   // 🆕 নতুন লাইন
+  if (fseller) list = list.filter(e => e.seller === fseller);
   if (fcustomer) list = list.filter(e => (e.customer || '').toLowerCase().includes(fcustomer));
 
   if (search) {
@@ -658,9 +684,7 @@ function getFiltered() {
     );
   }
 
-  // ডুপ্লিকেট ক্রেতা ফিল্টার
   if (onlyDup) {
-    // পুরো entries থেকে কে কে একাধিকবার আছে বের করি
     const counts = {};
     entries.forEach(e => {
       const c = (e.customer || '').trim();
@@ -679,7 +703,7 @@ function getFiltered() {
     else if (field === 'price') cmp = (a.price || 0) - (b.price || 0);
     else if (field === 'due') cmp = (a.due || 0) - (b.due || 0);
     else if (field === 'customer') cmp = (a.customer || '').localeCompare(b.customer || '');
-	else if (field === 'seller') cmp = (a.seller || '').localeCompare(b.seller || '');   // 🆕
+    else if (field === 'seller') cmp = (a.seller || '').localeCompare(b.seller || '');
     else if (field === 'shop') cmp = (a.shop || '').localeCompare(b.shop || '');
     return dir === 'desc' ? -cmp : cmp;
   });
@@ -709,7 +733,7 @@ function renderTable() {
       ? `<td class="checkbox-cell"><input type="checkbox" ${checked} onclick="event.stopPropagation(); toggleRowSelect('${e.id}', this.checked)"></td>`
       : '';
     const noteText = e.note ? escapeHtml(e.note) : '—';
-	const sellerText = e.seller ? escapeHtml(e.seller) : '—';      // 🆕
+    const sellerText = e.seller ? escapeHtml(e.seller) : '—';
     const customerText = e.customer ? escapeHtml(e.customer) : '—';
     const descText = e.description ? escapeHtml(e.description) : '—';
     const rowClick = isSelectMode
@@ -720,8 +744,8 @@ function renderTable() {
         ${cbCell}
         <td>${formatDateBn(e.date)}</td>
         <td class="shop-name-cell">${escapeHtml(e.shop)}</td>
-        <td class="seller-cell">${sellerText}</td>      <!-- 🆕 -->
-		<td class="customer-cell">${customerText}</td>
+        <td class="seller-cell">${sellerText}</td>
+        <td class="customer-cell">${customerText}</td>
         <td class="desc-cell">${descText}</td>
         <td class="amount-cell">${formatTaka(e.price)}</td>
         <td class="cash-cell">${formatTaka(e.cash)}</td>
@@ -839,7 +863,6 @@ function updateSummary(list) {
   if (elRec) elRec.textContent = formatTaka(received);
   if (elCost) elCost.textContent = formatTaka(cost);
 
-  // Label আপডেট
   const lSales = document.getElementById('labelSales');
   const lDue = document.getElementById('labelDue');
   const lRec = document.getElementById('labelReceived');
@@ -860,7 +883,7 @@ function exportCSV() {
     return;
   }
 
-    const rows = [['তারিখ', 'দোকান', 'বিক্রয়কারী', 'ক্রয়কারী', 'বিবরণ', 'মূল্য', 'নগদ', 'বাকি', 'বাকি প্রাপ্ত', 'খরচ', 'মন্তব্য']];
+  const rows = [['তারিখ', 'দোকান', 'বিক্রয়কারী', 'ক্রয়কারী', 'বিবরণ', 'মূল্য', 'নগদ', 'বাকি', 'বাকি প্রাপ্ত', 'খরচ', 'মন্তব্য']];
   list.forEach(e => {
     rows.push([
       formatDateBn(e.date), e.shop || '', e.seller || '', e.customer || '', e.description || '',
@@ -913,7 +936,7 @@ function closeChartModal() {
 function populateChartFilters() {
   const monthSelect = document.getElementById('chartMonth');
   const yearSelect = document.getElementById('chartYear');
-  const shopSelect = document.getElementById('chartShop');   // 🆕
+  const shopSelect = document.getElementById('chartShop');
   
   if (!monthSelect || !yearSelect) return;
 
@@ -943,7 +966,6 @@ function populateChartFilters() {
   yearSelect.innerHTML = '<option value="">-- বছর --</option>' + 
     sortedYears.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${toBn(y)}</option>`).join('');
 
-  // 🆕 দোকানের তালিকা
   if (shopSelect) {
     const currentShopValue = shopSelect.value;
     const shopSet = new Set();
@@ -960,7 +982,7 @@ function populateChartFilters() {
 function renderChart() {
   const month = document.getElementById('chartMonth').value;
   const year = document.getElementById('chartYear').value;
-  const selectedShop = document.getElementById('chartShop') ? document.getElementById('chartShop').value : '';   // 🆕
+  const selectedShop = document.getElementById('chartShop') ? document.getElementById('chartShop').value : '';
   
   if (!month || !year) return;
 
@@ -972,7 +994,6 @@ function renderChart() {
 
   const ctx = document.getElementById('myChart').getContext('2d');
 
-  // 🆕 ============ একক দোকান মোড ============
   if (selectedShop) {
     const shopEntries = filtered.filter(e => e.shop === selectedShop);
     
@@ -1036,7 +1057,6 @@ function renderChart() {
     return;
   }
 
-  // ============ সব দোকান মোড (তুলনা) — আগের মতোই ============
   const shopData = {};
   filtered.forEach(e => {
     const shop = e.shop || 'অন্যান্য';
