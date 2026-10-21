@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#DC2626">
+<title>ডিলিট করা ডেটা — হিসাবের খাতা</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="stylesheet" href="css/common.css">
+<style>
+  .recycle-card {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #E2E8F0;
+  }
+  .recycle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #64748B;
+    border-bottom: 1px dashed #E2E8F0;
+    padding-bottom: 8px;
+  }
+  .recycle-tag {
+    background: #FEE2E2;
+    color: #DC2626;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .recycle-body {
+    font-size: 14px;
+    color: #1E293B;
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+  .recycle-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .recycle-actions button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-restore { background: #10B981; color: white; }
+  .btn-permanent { background: #F1F5F9; color: #DC2626; border: 1px solid #FCA5A5; }
+  .empty-bin { text-align: center; padding: 40px 20px; color: #94A3B8; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header" style="background: linear-gradient(135deg, #991B1B 0%, #DC2626 100%);">
+    <button class="back-btn" onclick="goHomePage()">←</button>
+    <h1>ডিলিট করা ডেটা</h1>
+    <button class="header-icon-btn" onclick="emptyBin()" title="সব মুছে ফেলুন" style="font-size: 16px;">🗑️</button>
+  </div>
+
+  <div class="screen">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <p style="font-size: 13px; color: #64748B;">এখানে ডিলিট করা ডেটাগুলো জমা থাকে। আপনি চাইলে এগুলো ফিরিয়ে আনতে পারেন অথবা স্থায়ীভাবে মুছে ফেলতে পারেন।</p>
+    </div>
+
+    <div id="recycleList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/common.js"></script>
+<script>
+  let deletedData = [];
+
+  function loadDeletedData() {
+    deletedData = loadFromStorage('hisaber_khata_deleted_data', []);
+    renderList();
+  }
+
+  function renderList() {
+    const container = document.getElementById('recycleList');
+    if (deletedData.length === 0) {
+      container.innerHTML = `<div class="empty-bin"><div style="font-size:40px;margin-bottom:10px;">🗑️</div><p>ডিলিট করা কোনো ডেটা নেই</p></div>`;
+      return;
+    }
+
+    // নতুন ডিলিট হওয়া ডেটা আগে দেখাবে
+    deletedData.sort((a, b) => b.deletedAt - a.deletedAt);
+
+    container.innerHTML = deletedData.map(item => {
+      let pageName = 'অজানা';
+      if (item.deletedFrom === 'home') pageName = 'বাসার হিসাব';
+      if (item.deletedFrom === 'shop') pageName = 'দোকানের হিসাব';
+      if (item.deletedFrom === 'goods') pageName = 'মালামাল ক্রয়';
+      if (item.deletedFrom === 'roz') pageName = 'রোজ হিসাব';
+
+      const dateStr = formatDateBn(item.date);
+      let desc = '';
+      
+      // ডেটা কোন পেজের তার ওপর ভিত্তি করে বিবরণ তৈরি
+      if (item.deletedFrom === 'home') desc = `খাত: ${item.category} | পরিমাণ: ${formatTaka(item.amount)}`;
+      if (item.deletedFrom === 'shop') desc = `দোকান: ${item.shop} | ক্রেতা: ${item.customer || 'N/A'} | মূল্য: ${formatTaka(item.price)}`;
+      if (item.deletedFrom === 'goods') desc = `দোকান: ${item.shopName} | মূল্য: ${formatTaka(item.price)}`;
+      if (item.deletedFrom === 'roz') desc = `মোট: ${formatTaka(item.total)} | তারিখ: ${dateStr}`;
+
+      const delDate = new Date(item.deletedAt).toLocaleString('bn-BD');
+
+      return `
+        <div class="recycle-card">
+          <div class="recycle-header">
+            <span class="recycle-tag">${pageName}</span>
+            <span>ডিলিট: ${delDate}</span>
+          </div>
+          <div class="recycle-body">
+            <div>📅 তারিখ: ${dateStr}</div>
+            <div>📝 ${desc}</div>
+            ${item.note ? `<div style="color:#64748B; font-size:12px; margin-top:4px;">মন্তব্য: ${escapeHtml(item.note)}</div>` : ''}
+          </div>
+          <div class="recycle-actions">
+            <button class="btn-restore" onclick="restoreItem('${item.id}', '${item.deletedFrom}')">↩️ রিস্টোর করুন</button>
+            <button class="btn-permanent" onclick="permanentDelete('${item.id}')">স্থায়ীভাবে মুছুন</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function restoreItem(id, fromPage) {
+    if (!confirm('এই ডেটাটি কি ফিরিয়ে আনতে চান?')) return;
+    
+    const itemIndex = deletedData.findIndex(x => x.id === id);
+    if (itemIndex === -1) return;
+    
+    const item = deletedData[itemIndex];
+    let targetKey = '';
+    
+    // কোন পেজ থেকে ডিলিট হয়েছে তা চেক করে আসল কী-তে সেভ করা
+    if (fromPage === 'home') targetKey = 'hisaber_khata_home_v1';
+    if (fromPage === 'shop') targetKey = 'hisaber_khata_shop_v1';
+    if (fromPage === 'goods') targetKey = 'hisaber_khata_goods_v1';
+    if (fromPage === 'roz') targetKey = 'hisaber_khata_roz_v1';
+
+    if (!targetKey) return;
+
+    let originalData = loadFromStorage(targetKey, []);
+    
+    // অপ্রয়োজনীয় ফিল্ডগুলো বাদ দিয়ে আসল ডেটা তৈরি
+    const { deletedFrom, deletedAt, deletedBy, ...originalItem } = item;
+    
+    originalData.push(originalItem);
+    saveToStorage(targetKey, originalData);
+
+    // রিসাইকেল বিন থেকে মুছে ফেলা
+    deletedData.splice(itemIndex, 1);
+    saveToStorage('hisaber_khata_deleted_data', deletedData);
+    
+    showToast('সফলভাবে ফিরিয়ে আনা হয়েছে', 'success');
+    renderList();
+  }
+
+  function permanentDelete(id) {
+    if (!confirm('এটি স্থায়ীভাবে মুছে ফেলবেন? এটি আর ফিরিয়ে আনা যাবে না!')) return;
+    
+    deletedData = deletedData.filter(x => x.id !== id);
+    saveToStorage('hisaber_khata_deleted_data', deletedData);
+    showToast('স্থায়ীভাবে মুছে ফেলা হয়েছে', 'success');
+    renderList();
+  }
+
+  function emptyBin() {
+    if (deletedData.length === 0) return;
+    if (!confirm('রিসাইকেল বিনের সব ডেটা স্থায়ীভাবে মুছে ফেলবেন?')) return;
+    
+    deletedData = [];
+    saveToStorage('hisaber_khata_deleted_data', deletedData);
+    showToast('বিন খালি করা হয়েছে', 'success');
+    renderList();
+  }
+
+  // পেজ লোড হওয়া মাত্র ডেটা আনবে
+  loadDeletedData();
+</script>
+</body>
+</html>

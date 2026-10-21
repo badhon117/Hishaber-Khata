@@ -8,6 +8,105 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="stylesheet" href="css/common.css">
+<!-- 🆕 Splash Login Styles -->
+<style>
+  /* Splash Screen এ লগইন বাটন */
+  .splash-login-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 30px;
+    padding: 0 20px;
+    max-width: 400px;
+    width: 100%;
+    animation: fadeInDown 1.2s ease forwards;
+  }
+  
+  .splash-google-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: white;
+    color: #1E293B;
+    border: 1.5px solid #CBD5E1;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  
+  .splash-google-btn:hover {
+    background: #F8FAFC;
+    border-color: #94A3B8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  }
+  
+  .splash-google-btn:active {
+    transform: scale(0.98);
+  }
+  
+  .splash-google-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  
+  .splash-skip-btn {
+    background: transparent;
+    border: none;
+    color: #64748B;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 8px 16px;
+    text-decoration: underline;
+    transition: 0.15s;
+  }
+  
+  .splash-skip-btn:hover {
+    color: #1E3A8A;
+  }
+  
+  .splash-loading {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  
+  .splash-loading.show {
+    display: flex;
+  }
+  
+  .splash-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #E2E8F0;
+    border-top-color: #2563EB;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .splash-loading-text {
+    font-size: 13px;
+    color: #64748B;
+    font-weight: 500;
+  }
+</style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="js/sync.js"></script>
 </head>
@@ -18,6 +117,28 @@
   <img src="logo.png" alt="হিসাবের খাতা" class="splash-logo-img">
   <h1 class="splash-title">হিসাবের খাতা</h1>
   <p class="splash-subtitle">আপনার দৈনন্দিন খরচের হিসাব</p>
+
+  <!-- 🆕 লগইন অপশন -->
+  <div class="splash-login-area" id="splashLoginArea">
+    <button class="splash-google-btn" onclick="splashLogin()">
+      <svg class="splash-google-icon" viewBox="0 0 48 48">
+        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+      </svg>
+      Google দিয়ে লগইন করুন
+    </button>
+    <button class="splash-skip-btn" onclick="splashSkip()">
+      লগইন ছাড়া চালিয়ে যান →
+    </button>
+  </div>
+
+  <!-- 🆕 লোডিং অবস্থা -->
+  <div class="splash-loading" id="splashLoading">
+    <div class="splash-spinner"></div>
+    <div class="splash-loading-text">সিঙ্ক করা হচ্ছে...</div>
+  </div>
 </div>
 
 <div class="app">
@@ -32,8 +153,20 @@
       <h1>হিসাবের খাতা</h1>
       <p>আপনার দৈনন্দিন খরচের হিসাব</p>
     </div>
-
+	
+	
     <div class="home-cards">
+	
+	 <!-- 🆕 রোজ হিসাব কার্ড (বাসার হিসাবের আগে) -->
+      <button class="home-card card-roz" onclick="navigateTo('roz.html')">
+        <div class="home-card-icon">📅</div>
+        <div class="home-card-text">
+          <h3>রোজ হিসাব</h3>
+          <p>দৈনিক লেনদেনের হিসাব রাখুন</p>
+        </div>
+        <div class="home-card-arrow">›</div>
+      </button>
+	
       <button class="home-card card-home" onclick="navigateTo('home.html')">
         <div class="home-card-icon">🏠</div>
         <div class="home-card-text">
@@ -111,21 +244,47 @@
     <h3>⚙️ সেটিংস</h3>
     <button class="settings-close" onclick="closeSettingsMenu()">✕</button>
   </div>
+  
   <div class="settings-list">
-    <button class="settings-item" onclick="closeSettingsMenu(); openThemeModal();">
-      <span class="si-icon">🎨</span>
-      <span class="si-text">থিম পরিবর্তন করুন</span>
-      <span class="si-arrow">›</span>
-    </button>
-    
-    <button class="settings-item" id="mathHintToggleBtn" onclick="toggleMathHint();">
-      <span class="si-icon">💡</span>
-      <span class="si-text">হিসাবের হিন্ট বন্ধ করুন</span>
-      <span class="si-arrow">›</span>
-    </button>
-  </div>
+  <button class="settings-item" onclick="closeSettingsMenu(); openThemeModal();">
+    <span class="si-icon">🎨</span>
+    <span class="si-text">থিম পরিবর্তন করুন</span>
+    <span class="si-arrow">›</span>
+  </button>
+  
+  <button class="settings-item" id="mathHintToggleBtn" onclick="toggleMathHint();">
+    <span class="si-icon">💡</span>
+    <span class="si-text">হিসাবের হিন্ট বন্ধ করুন</span>
+    <span class="si-arrow">›</span>
+  </button>
+
+  <!-- 🆕 অটো-সিঙ্ক টগল -->
+  <button class="settings-item" id="autoSyncToggleBtn" onclick="toggleAutoSyncUI();">
+    <span class="si-icon">🔄</span>
+    <span class="si-text">অটো-সিঙ্ক চালু করুন</span>
+    <span class="si-arrow">›</span>
+  </button>
+
+  <!-- 🆕 অ্যাকাউন্ট স্ট্যাটাস -->
+  <button class="settings-item" id="accountStatusBtn" onclick="closeSettingsMenu(); handleGoogleLogin();">
+    <span class="si-icon">☁️</span>
+    <span class="si-text" id="accountStatusText">Google ড্রাইভে লগইন করুন</span>
+    <span class="si-arrow">›</span>
+  </button>
+  <button class="settings-item" onclick="setupPin()">
+  <span class="si-icon">🔑</span>
+  <span class="si-text">পিন পরিবর্তন করুন</span>
+  <span class="si-arrow">›</span>
+</button>
+    <button class="settings-item" onclick="closeSettingsMenu(); navigateTo('recycle-bin.html');">
+    <span class="si-icon">🗑️</span>
+    <span class="si-text">ডিলিট করা ডেটা (রিসাইকেল বিন)</span>
+    <span class="si-arrow">›</span>
+  </button>
+</div>
+  
   <div class="settings-footer">
-    হিসাবের খাতা • সংস্করণ ২.০
+    হিসাবের খাতা • সংস্করণ ৪.০
   </div>
 </div>
 
@@ -163,26 +322,123 @@
 
 <script src="js/common.js"></script>
 <script>
+
+// 🆕 Splash Screen লজিক (Fixed for App Close & Back Navigation)
 document.addEventListener('DOMContentLoaded', () => {
   const splash = document.getElementById('splashScreen');
+  const loginArea = document.getElementById('splashLoginArea');
   
-  // চেক করা হচ্ছে ইউজার আগে স্প্ল্যাশ দেখেছে কি না
-  if (sessionStorage.getItem('splash_shown') === 'true') {
-    // যদি দেখে থাকে, তবে সাথে সাথে স্প্ল্যাশ স্ক্রিন সরিয়ে দাও (কোনো এনিমেশন ছাড়াই)
-    if (splash) splash.style.display = 'none';
+  const savedToken = localStorage.getItem('gdrive_access_token');
+  const expiry = localStorage.getItem('gdrive_token_expiry');
+  const hasValidToken = savedToken && expiry && Date.now() < (parseInt(expiry) - 300000);
+  const skipLogin = localStorage.getItem('use_without_sync') === 'true';
+  
+  // 🆕 সাব-পেজ থেকে ব্যাকে আসার সময় ফ্ল্যাগ সেট করার ব্যবস্থা
+  const isComingBack = sessionStorage.getItem('from_sub_page') === 'true';
+  
+  // সাব-পেজে যাওয়ার সময় ফ্ল্যাগটি রিসেট করে দিই যাতে পরেরবার অ্যাপ ক্লোজ করলে আবার স্প্ল্যাশ আসে
+  sessionStorage.removeItem('from_sub_page');
+
+  // যদি সাব-পেজ থেকে ব্যাকে আসে অথবা আগে থেকেই লগইন/স্কিপ করা থাকে
+  if (isComingBack || hasValidToken || skipLogin) {
+    if (splash) splash.classList.add('hidden');
   } else {
-    // যদি না দেখে থাকে, তবে ২ সেকেন্ড দেখাও এবং সেশন স্টোরেজে সেভ করো
-    setTimeout(() => {
-      if (splash) {
-        splash.classList.add('hidden');
-        sessionStorage.setItem('splash_shown', 'true');
-      }
-    }, 2200);
+    // অ্যাপ সম্পূর্ণ ক্লোজ করে নতুন করে ঢুকলে এখানে আসবে এবং স্প্ল্যাশ ও লগইন দেখাবে
+    if (loginArea) loginArea.style.display = 'flex';
   }
 
   updateInstallButtons();
   startInstallBannerTimer();
+  
+  if (typeof updateMathHintMenuUI === 'function') updateMathHintMenuUI();
+  if (typeof updateAutoSyncUI === 'function') updateAutoSyncUI();
+  if (typeof updateAccountStatusUI === 'function') updateAccountStatusUI();
+   // 🆕 পিন লক চেক
+  checkPinLock(); 
 });
+
+
+
+// 🆕 Splash এ Google লগইন (এখানে সমস্যাটা ছিল, এটাকে ঠিক করা হলো)
+function splashLogin() {
+  const loginArea = document.getElementById('splashLoginArea');
+  const loadingArea = document.getElementById('splashLoading');
+  
+  if (loginArea) loginArea.style.display = 'none';
+  if (loadingArea) loadingArea.classList.add('show');
+  
+  // যদি tokenClient আগে থেকেই রেডি থাকে
+  if (typeof tokenClient !== 'undefined' && tokenClient !== null) {
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
+  } else {
+    // না থাকলে গুগলের স্ক্রিপ্ট লোড হওয়া পর্যন্ত অপেক্ষা করবে
+    let attempts = 0;
+    const checkInterval = setInterval(() => {
+      attempts++;
+      if (typeof tokenClient !== 'undefined' && tokenClient !== null) {
+        clearInterval(checkInterval);
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+      } else if (attempts > 30) { // ১৫ সেকেন্ড অপেক্ষা
+        clearInterval(checkInterval);
+        if (loadingArea) loadingArea.classList.remove('show');
+        if (loginArea) loginArea.style.display = 'flex';
+        showToast('গুগল লোড হতে সমস্যা হচ্ছে। ইন্টারনেট চেক করুন।', 'error');
+      }
+    }, 500);
+  }
+}
+
+// 🆕 লগইন ছাড়া চালিয়ে যান
+function splashSkip() {
+  localStorage.setItem('use_without_sync', 'true');
+  const splash = document.getElementById('splashScreen');
+  if (splash) splash.classList.add('hidden');
+  sessionStorage.setItem('splash_shown', 'true');
+  showToast('অফলাইন মোডে চলছে', 'success');
+}
+
+// 🆕 লগইন সফল হলে (sync.js থেকে কল হবে)
+function onLoginSuccess() {
+  localStorage.removeItem('use_without_sync');
+  const splash = document.getElementById('splashScreen');
+  if (splash) splash.classList.add('hidden');
+  sessionStorage.setItem('splash_shown', 'true');
+}
+
+// 🆕 অটো-সিঙ্ক টগল
+function toggleAutoSyncUI() {
+  const current = localStorage.getItem('auto_sync_enabled') !== 'false';
+  const newState = !current;
+  setAutoSync(newState);
+  updateAutoSyncUI();
+}
+
+function updateAutoSyncUI() {
+  const btn = document.getElementById('autoSyncToggleBtn');
+  if (!btn) return;
+  const isOn = localStorage.getItem('auto_sync_enabled') !== 'false';
+  btn.innerHTML = `
+    <span class="si-icon">🔄</span>
+    <span class="si-text">অটো-সিঙ্ক ${isOn ? 'বন্ধ করুন' : 'চালু করুন'}</span>
+    <span class="si-arrow">›</span>
+  `;
+}
+
+// 🆕 অ্যাকাউন্ট স্ট্যাটাস আপডেট
+function updateAccountStatusUI() {
+  const txt = document.getElementById('accountStatusText');
+  if (!txt) return;
+  
+  const token = localStorage.getItem('gdrive_access_token');
+  const expiry = localStorage.getItem('gdrive_token_expiry');
+  const isLoggedIn = token && expiry && Date.now() < (parseInt(expiry) - 300000);
+  
+  if (isLoggedIn) {
+    txt.textContent = '✅ Google Drive-এ লগইন করা আছে';
+  } else {
+    txt.textContent = 'Google Drive-এ লগইন করুন';
+  }
+}
 
 function showComingSoon(name) {
   document.querySelector('.screen:not(.hidden)').classList.add('hidden');
@@ -195,11 +451,70 @@ function hideComingSoon() {
   document.getElementById('comingSoonScreen').classList.add('hidden');
   document.querySelector('.screen').classList.remove('hidden');
 }
-// 🆕 পেজ লোডে মেনু আইকন আপডেট
-document.addEventListener('DOMContentLoaded', () => {
-  updateMathHintMenuUI();
-});
+
+// 🆕 পিন লক লজিক (রিফ্রেশে বারবার পিন না চাওয়ার জন্য)
+let currentPin = '';
+let savedPin = localStorage.getItem('app_pin'); // 🆕 const এর জায়গায় let করা হলো
+
+function checkPinLock() {
+  // যদি পিন সেট করা থাকে এবং এই সেশনে (ট্যাবে) আগে পিন দেওয়া না হয়ে থাকে
+  if (savedPin && sessionStorage.getItem('pin_verified') !== 'true') {
+    document.getElementById('pinLockScreen').style.display = 'flex';
+  }
+}
+
+
+
+function enterPin(num) {
+  if (num === 'del') {
+    currentPin = currentPin.slice(0, -1);
+  } else if (currentPin.length < 4) {
+    currentPin += num;
+  }
+  
+  updateDots();
+  
+  if (currentPin.length === 4) {
+    if (currentPin === savedPin) {
+      // 🆕 পিন সঠিক হলে সেশন স্টোরেজে মনে রাখবে
+      sessionStorage.setItem('pin_verified', 'true');
+      
+      document.getElementById('pinLockScreen').style.display = 'none';
+      currentPin = '';
+      updateDots();
+    } else {
+      showToast('ভুল পিন!', 'error');
+      setTimeout(() => { currentPin = ''; updateDots(); }, 500);
+    }
+  }
+}
+
+function updateDots() {
+  document.querySelectorAll('.pin-dot').forEach((dot, index) => {
+    if (index < currentPin.length) dot.classList.add('filled');
+    else dot.classList.remove('filled');
+  });
+}
+
+function setupPin() {
+  const newPin = prompt("নতুন ৪ ডিজিটের পিন দিন (বন্ধ করতে খালি রাখুন):");
+  if (newPin === "") {
+    localStorage.removeItem('app_pin');
+    savedPin = null; // 🆕 পিন বন্ধ করলে ভেরিয়েবল খালি হবে
+    sessionStorage.removeItem('pin_verified'); 
+    showToast('পিন লক বন্ধ করা হলো', 'success');
+  } else if (newPin && newPin.length === 4 && !isNaN(newPin)) {
+    localStorage.setItem('app_pin', newPin);
+    savedPin = newPin; // 🆕 নতুন পিন সেট করলে সাথে সাথে কাজ করবে
+    sessionStorage.removeItem('pin_verified'); 
+    showToast('পিন সেট করা হয়েছে', 'success');
+  } else if (newPin !== null) {
+    showToast('৪ ডিজিটের সঠিক পিন দিন', 'error');
+  }
+}
 </script>
+
+
 <!-- ========== THEME MODAL ========== -->
 <div class="theme-modal-overlay" id="themeModalOverlay" onclick="if(event.target === this) closeThemeModal()">
   <div class="theme-modal">
@@ -219,6 +534,39 @@ document.addEventListener('DOMContentLoaded', () => {
     
     <button class="sheet-cancel" onclick="closeThemeModal()" style="margin-top: 15px;">বাতিল করুন</button>
   </div>
+</div>
+
+<!-- 🆕 পিন লক স্ক্রিন -->
+<div id="pinLockScreen" style="position:fixed; inset:0; background:#F1F5F9; z-index:10000; display:none; flex-direction:column; align-items:center; justify-content:center;">
+  <h1 style="color:#1E3A8A; font-size:24px; margin-bottom:10px;">🔒 অ্যাপ লক</h1>
+  <p style="color:#64748B; margin-bottom:30px;">আপনার পিন দিন</p>
+  
+  <div id="pinDots" style="display:flex; gap:15px; margin-bottom:40px;">
+    <div class="pin-dot" style="width:20px;height:20px;border-radius:50%;background:#CBD5E1;"></div>
+    <div class="pin-dot" style="width:20px;height:20px;border-radius:50%;background:#CBD5E1;"></div>
+    <div class="pin-dot" style="width:20px;height:20px;border-radius:50%;background:#CBD5E1;"></div>
+    <div class="pin-dot" style="width:20px;height:20px;border-radius:50%;background:#CBD5E1;"></div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(3, 70px); gap:15px;">
+    <button class="pin-btn" onclick="enterPin('1')">1</button>
+    <button class="pin-btn" onclick="enterPin('2')">2</button>
+    <button class="pin-btn" onclick="enterPin('3')">3</button>
+    <button class="pin-btn" onclick="enterPin('4')">4</button>
+    <button class="pin-btn" onclick="enterPin('5')">5</button>
+    <button class="pin-btn" onclick="enterPin('6')">6</button>
+    <button class="pin-btn" onclick="enterPin('7')">7</button>
+    <button class="pin-btn" onclick="enterPin('8')">8</button>
+    <button class="pin-btn" onclick="enterPin('9')">9</button>
+    <button class="pin-btn" style="visibility:hidden;">.</button>
+    <button class="pin-btn" onclick="enterPin('0')">0</button>
+    <button class="pin-btn" onclick="enterPin('del')" style="font-size:20px;">⌫</button>
+  </div>
+  <style>
+    .pin-btn { width:70px; height:70px; border-radius:50%; border:none; background:white; font-size:26px; font-weight:bold; color:#1E293B; box-shadow:0 2px 8px rgba(0,0,0,0.1); cursor:pointer; font-family:inherit; }
+    .pin-btn:active { background:#E2E8F0; transform:scale(0.95); }
+    .pin-dot.filled { background:#1E3A8A !important; }
+  </style>
 </div>
 
 </body>

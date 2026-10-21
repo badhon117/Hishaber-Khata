@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#D97706">
+<title>রোজ হিসাব — হিসাবের খাতা</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="stylesheet" href="css/common.css">
+<link rel="stylesheet" href="css/roz.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="js/sync.js"></script>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ========== HEADER ========== -->
+  <div class="header" style="background:linear-gradient(135deg,#B45309 0%,#F59E0B 100%);box-shadow:0 2px 12px rgba(217,119,6,0.25);">
+    <button class="back-btn" onclick="goHomePage()">←</button>
+    <h1>রোজ হিসাব</h1>
+    <button class="header-icon-btn" onclick="openFormulaModal()" title="হিসাবের ফর্মুলা" style="font-size: 16px;">💡</button>
+  </div>
+
+  <!-- ========== FORM TAB ========== -->
+  <div id="formTab" class="screen" style="padding-bottom:100px;">
+    <div class="form-card">
+      <h2>
+        <span id="formTitle">নতুন এন্ট্রি যোগ করুন</span>
+        <span id="editBadge" class="edit-badge" style="display:none;">এডিট মোড</span>
+      </h2>
+
+      <input type="hidden" id="editId">
+
+      <div class="form-group">
+        <label>তারিখ <span class="req">*</span></label>
+        <input type="date" id="fDate">
+        <div class="date-bn" id="dateBn"></div>
+      </div>
+
+		      <div class="roz-fields-grid">
+
+  <!-- ১. বিকাশ পার্সোনাল -->
+  <div class="form-group">
+    <label>বিকাশ পার্সোনাল</label>
+    <input type="text" id="fBkashPersonal" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ২. বাধন -->
+  <div class="form-group">
+    <label>বাধন</label>
+    <input type="text" id="fBadhon" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ৩. মার্চেন্ট ৩২৮ -->
+  <div class="form-group">
+    <label>মার্চেন্ট ৩২৮</label>
+    <input type="text" id="fMerchant328" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ৪. বিকাশ এজেন্ট -->
+  <div class="form-group">
+    <label>বিকাশ এজেন্ট</label>
+    <input type="text" id="fBkashAgent" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ৫. মার্চেন্ট ৪০ -->
+  <div class="form-group">
+    <label>মার্চেন্ট ৪০</label>
+    <input type="text" id="fMerchant40" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ৬. নগদ বিকাশ -->
+  <div class="form-group">
+    <label>নগদ বিকাশ</label>
+    <input type="text" id="fNagadBkash" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ৭. ক্যাশ -->
+  <div class="form-group">
+    <label>ক্যাশ</label>
+    <input type="text" id="fCash" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ৮. পাওনা -->
+  <div class="form-group">
+    <label>পাওনা</label>
+    <input type="text" id="fPawna" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ৯. মোট (Auto) -->
+  <div class="form-group">
+    <label>মোট <span class="auto-badge">Auto</span></label>
+    <input type="text" id="fTotal" class="autocalc" placeholder="0" readonly>
+  </div>
+
+  <!-- ১০. খরচ -->
+  <div class="form-group">
+    <label>খরচ</label>
+    <input type="text" id="fExpense" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ১১. সঞ্চয় -->
+  <div class="form-group">
+    <label>সঞ্চয়</label>
+    <input type="text" id="fSavings" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ১২. মালামাল ক্রয় -->
+  <div class="form-group">
+    <label>মালামাল ক্রয়</label>
+    <input type="text" id="fGoodsBuy" placeholder="0"   autocomplete="off">
+  </div>
+
+  <!-- ১৩. মোট খরচ (Auto) -->
+  <div class="form-group">
+    <label>মোট খরচ <span class="auto-badge">Auto</span></label>
+    <input type="text" id="fTotalExpense" class="autocalc" placeholder="0" readonly>
+  </div>
+
+  <!-- ১৪. খরচসহ সর্বমোট (Auto) -->
+  <div class="form-group">
+    <label>খরচসহ সর্বমোট <span class="auto-badge">Auto</span></label>
+    <input type="text" id="fGrandTotal" class="autocalc" placeholder="0" readonly>
+  </div>
+
+  <!-- ১৫. অবশিষ্ট টাকা (Auto) -->
+  <div class="form-group">
+    <label>অবশিষ্ট টাকা <span class="auto-badge">Auto</span></label>
+    <input type="text" id="fRemaining" class="autocalc" placeholder="0" readonly>
+  </div>
+
+  <!-- ১৬. কম / বেশি (Auto) -->
+  <div class="form-group">
+    <label>কম / বেশি <span class="auto-badge">Auto</span></label>
+    <input type="text" id="fLessMore" class="autocalc" placeholder="0" readonly>
+  </div>
+
+  <!-- ১৭. ঘাটতি / উদ্বৃত্ত(Auto) -->
+  <div class="form-group">
+    <label>ঘাটতি / উদ্বৃত্ত <span class="auto-badge">Auto</span></label>
+    <input type="text" id="fDeficit" class="autocalc" placeholder="0" readonly>
+  </div>
+
+  <!-- ১৮. দেনা (Input) -->
+  <div class="form-group">
+    <label>দেনা</label>
+    <input type="text" id="fDebt" placeholder="0"   autocomplete="off">
+  </div>
+
+</div>
+
+<!-- ১৯. মন্তব্য (সবার নিচে) -->
+<div class="form-group">
+  <label>মন্তব্য <span class="opt">(ঐচ্ছিক)</span></label>
+  <textarea id="fNote" placeholder="অতিরিক্ত মন্তব্য"></textarea>
+</div>
+    
+      <div class="btn-row">
+        <button class="btn btn-cancel" onclick="cancelForm()">Cancel</button>
+        <button class="btn btn-save" onclick="saveEntry()" style="background:#D97706;">Save</button>
+        <button class="btn btn-delete" id="deleteBtn" onclick="deleteCurrent()" style="display:none;">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== STATISTICS TAB ========== -->
+  <div id="statsTab" class="screen hidden" style="padding-bottom:100px;">
+
+    <div class="selection-bar" id="selectionBar" style="background:#B45309;">
+      <div class="count" id="selCount">০টি নির্বাচিত</div>
+      <button class="select-all" onclick="toggleSelectAll()">সব</button>
+      <button onclick="exitSelectMode()">Cancel</button>
+      <button class="danger" onclick="deleteSelected()">Delete</button>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" class="search-box" id="searchBox" placeholder="🔍 তারিখ বা নোট খুঁজুন..." oninput="renderTable()">
+
+      <div class="toolbar-row">
+        <button class="tool-btn" id="filterBtn" onclick="toggleDropdownPanel('filterPanel','filterBtn')">▼ ফিল্টার</button>
+        <button class="tool-btn" id="sortBtn" onclick="toggleDropdownPanel('sortPanel','sortBtn')">↕ সর্ট</button>
+        <button class="tool-btn export" onclick="openExportSheet()">📥 এক্সপোর্ট</button>
+        <button class="tool-btn select" id="selectBtn" onclick="enterSelectMode()">☑ Select</button>
+      </div>
+
+      <div class="dropdown-panel" id="filterPanel">
+        <h4>মাস ফিল্টার</h4>
+        <select id="filterMonth" onchange="renderTable()">
+          <option value="">সব মাস</option>
+        </select>
+      </div>
+
+      <div class="dropdown-panel" id="sortPanel">
+        <h4>সর্ট করুন</h4>
+        <select id="sortBy" onchange="renderTable()">
+          <option value="date-desc">তারিখ (নতুন → পুরনো)</option>
+          <option value="date-asc">তারিখ (পুরনো → নতুন)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="roz-summary-grid">
+      <div class="roz-summary-box rz-count">
+        <div class="rs-label" id="labelCount">মোট এন্ট্রি</div>
+        <div class="rs-value" id="sumCount">০</div>
+      </div>
+      <div class="roz-summary-box rz-total">
+        <div class="rs-label" id="labelTotal"></div>
+        <div class="rs-value" id="sumTotal">৳০</div>
+      </div>
+      <div class="roz-summary-box rz-expense">
+        <div class="rs-label" id="labelTotalExpense">মোট খরচ</div>
+        <div class="rs-value" id="sumTotalExpense">৳০</div>
+      </div>
+      
+    </div>
+
+    <div class="print-page-header" id="printHeaderText">রোজ হিসাব | হিসাবের খাতা</div>
+
+<!-- 🆕 চার্ট দেখার বাটন -->
+<div style="text-align: right; margin-bottom: 10px;" class="chartModal">
+  <button onclick="openChartModal()" style="background: #B45309; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit;">
+    📊 চার্ট দেখুন
+  </button>
+</div>
+
+<!-- 🆕 চার্ট মডাল (পপআপ) -->
+<div id="chartModal" class="chartModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+  <div style="background: white; border-radius: 16px; padding: 20px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    
+    <!-- হেডার -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; position: sticky; top: 0; background: white; z-index: 2; padding-bottom: 5px;">
+      <h3 style="margin: 0; color: #B45309; font-size: 16px;">📊 রোজ হিসাব চার্ট</h3>
+      <button onclick="closeChartModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748B;">✕</button>
+    </div>
+
+    <!-- ফিল্টার: দিন + মাস + বছর -->
+    <div style="display: flex; gap: 6px; margin-bottom: 15px;">
+      <select id="chartDay" onchange="renderChart()" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #CBD5E1; font-family: inherit; font-size: 13px;">
+        <option value="">-- দিন --</option>
+      </select>
+      <select id="chartMonth" onchange="renderChart()" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #CBD5E1; font-family: inherit; font-size: 13px;">
+        <option value="">-- মাস --</option>
+      </select>
+      <select id="chartYear" onchange="renderChart()" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #CBD5E1; font-family: inherit; font-size: 13px;">
+        <option value="">-- বছর --</option>
+      </select>
+    </div>
+
+    <!-- চার্ট ১: আয়ের সোর্স -->
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 13px; font-weight: 700; color: #B45309; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 2px solid #FEF3C7;">
+        💰 আয়ের সোর্স
+      </div>
+      <div style="position: relative; height: 280px; width: 100%;">
+        <canvas id="chartIncome"></canvas>
+      </div>
+    </div>
+
+    <!-- চার্ট ২: খরচের সারাংশ -->
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 13px; font-weight: 700; color: #B45309; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 2px solid #FEF3C7;">
+        💸 খরচের সারাংশ
+      </div>
+      <div style="position: relative; height: 200px; width: 100%;">
+        <canvas id="chartExpense"></canvas>
+      </div>
+    </div>
+
+    <!-- চার্ট ৩: সারাংশ -->
+    <div style="margin-bottom: 10px;">
+      <div style="font-size: 13px; font-weight: 700; color: #B45309; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 2px solid #FEF3C7;">
+        📊 সারাংশ
+      </div>
+      <div style="position: relative; height: 220px; width: 100%;">
+        <canvas id="chartSummary"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="table-card">
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr id="tableHead">
+              <th>তারিখ</th>
+              <th style="text-align:right;">বিকাশ পার্সোনাল</th>
+              <th style="text-align:right;">বাধন</th>
+              <th style="text-align:right;">মার্চেন্ট ৩২৮</th>
+              <th style="text-align:right;">বিকাশ এজেন্ট</th>
+              <th style="text-align:right;">মার্চেন্ট ৪০</th>
+              <th style="text-align:right;">নগদ বিকাশ</th>
+              <th style="text-align:right;">ক্যাশ</th>
+              <th style="text-align:right;">পাওনা</th>
+              <th style="text-align:right;">মোট</th>
+              <th style="text-align:right;">খরচ</th>
+              <th style="text-align:right;">সঞ্চয়</th>
+              <th style="text-align:right;">মালামাল ক্রয়</th>
+              <th style="text-align:right;">মোট খরচ</th>
+              <th style="text-align:right;">খরচসহ সর্বমোট</th>
+              <th style="text-align:right;">অবশিষ্ট টাকা</th>
+              <th style="text-align:right;">কম / বেশি</th>
+              <th style="text-align:right;">ঘাটতি / উদ্বৃত্ত</th>
+              <th style="text-align:right;">দেনা</th>
+              <th style="text-align:right;">মন্তব্য</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState">
+        <div class="icon">📋</div>
+        <p>এখনো কোনো ডেটা যোগ করা হয়নি</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== FAB + BOTTOM TABS ========== -->
+  <button class="fab" id="fabBtn" onclick="fabNewEntry()" style="background:#D97706;">+</button>
+
+  <div class="bottom-tabs">
+    <button class="tab-btn active" id="tabForm" onclick="switchTab('form')" style="color:#B45309;">রোজ হিসাব</button>
+    <button class="tab-btn" id="tabStats" onclick="switchTab('stats')">Statistics</button>
+  </div>
+
+</div>
+
+<!-- ========== TOAST ========== -->
+<div class="toast" id="toast"></div>
+
+<!-- ========== EXPORT BOTTOM SHEET ========== -->
+<div class="sheet-overlay" id="exportOverlay" onclick="closeExportSheet()"></div>
+<div class="bottom-sheet" id="exportSheet">
+  <div class="sheet-drag"></div>
+  <div class="sheet-title">ফাইল এক্সপোর্ট করুন</div>
+
+  <div class="sheet-options" style="justify-content: center; gap: 20px;">
+    <button class="sheet-btn" onclick="exportPDF()" style="flex: 0 1 120px;">
+      <span class="icon">📄</span>
+      <span class="text">PDF</span>
+    </button>
+    <button class="sheet-btn" onclick="exportCSV()" style="flex: 0 1 120px;">
+      <span class="icon">📊</span>
+      <span class="text">CSV</span>
+    </button>
+  </div>
+
+  <button class="sheet-cancel" onclick="closeExportSheet()">বাতিল করুন</button>
+</div>
+
+  <!-- ========== 🆕 FORMULA MODAL (হিসাবের ফর্মুলা) ========== -->
+<div class="formula-modal-overlay" id="formulaModalOverlay" onclick="if(event.target === this) closeFormulaModal()">
+  <div class="formula-modal">
+    
+    <!-- হেডার -->
+    <div class="formula-modal-header">
+      <h3>📐 হিসাবের ফর্মুলা</h3>
+      <button class="formula-modal-close" onclick="closeFormulaModal()">✕</button>
+    </div>
+
+    <!-- ফর্মুলা লিস্ট -->
+    <div class="formula-modal-body">
+
+      <!-- ১. মোট -->
+      <div class="formula-card">
+        <div class="formula-title">
+          <span class="formula-dot" style="background:#F59E0B;"></span>
+          মোট
+        </div>
+        <div class="formula-content">
+          <span class="formula-field">বিকাশ পার্সোনাল</span>
+          <span class="formula-op">+</span>
+          <span class="formula-field">বাধন</span>
+          <span class="formula-op">+</span>
+          <span class="formula-field">মার্চেন্ট ৩২৮</span>
+          <span class="formula-op">+</span>
+          <span class="formula-field">বিকাশ এজেন্ট</span>
+          <span class="formula-op">+</span>
+          <span class="formula-field">মার্চেন্ট ৪০</span>
+          <span class="formula-op">+</span>
+          <span class="formula-field">নগদ বিকাশ</span>
+          <span class="formula-op">+</span>
+          <span class="formula-field">ক্যাশ</span>
+          <span class="formula-op">+</span>
+          <span class="formula-field">পাওনা</span>
+        </div>
+      </div>
+
+      <!-- ২. মোট খরচ -->
+      <div class="formula-card">
+        <div class="formula-title">
+          <span class="formula-dot" style="background:#DC2626;"></span>
+          মোট খরচ
+        </div>
+        <div class="formula-content">
+          <span class="formula-field">খরচ</span>
+          <span class="formula-op">+</span>
+          <span class="formula-field">সঞ্চয়</span>
+          <span class="formula-op">+</span>
+          <span class="formula-field">মালামাল ক্রয়</span>
+        </div>
+      </div>
+
+      <!-- ৩. খরচসহ সর্বমোট -->
+      <div class="formula-card">
+        <div class="formula-title">
+          <span class="formula-dot" style="background:#2563EB;"></span>
+          খরচসহ সর্বমোট
+        </div>
+        <div class="formula-content">
+          <span class="formula-field">মোট</span>
+          <span class="formula-op">+</span>
+          <span class="formula-field">মোট খরচ</span>
+        </div>
+      </div>
+
+      <!-- ৪. অবশিষ্ট টাকা -->
+      <div class="formula-card">
+        <div class="formula-title">
+          <span class="formula-dot" style="background:#10B981;"></span>
+          অবশিষ্ট টাকা
+        </div>
+        <div class="formula-content">
+          <span class="formula-field">খরচসহ সর্বমোট</span>
+          <span class="formula-op">−</span>
+          <span class="formula-field">মোট খরচ</span>
+        </div>
+      </div>
+
+      <!-- ৫. কম / বেশি -->
+      <div class="formula-card">
+        <div class="formula-title">
+          <span class="formula-dot" style="background:#8B5CF6;"></span>
+          কম / বেশি
+        </div>
+        <div class="formula-content">
+          <span class="formula-field">খরচসহ সর্বমোট</span>
+          <span class="formula-op">−</span>
+          <span class="formula-field">অবশিষ্ট টাকা</span>
+        </div>
+      </div>
+
+      <!-- ৬. ঘাটতি / উদ্বৃত্ত -->
+      <div class="formula-card">
+        <div class="formula-title">
+          <span class="formula-dot" style="background:#F97316;"></span>
+          ঘাটতি / উদ্বৃত্ত
+        </div>
+        <div class="formula-content">
+          <span class="formula-field">অবশিষ্ট টাকা</span>
+          <span class="formula-op">−</span>
+          <span class="formula-field">দেনা</span>
+        </div>
+      </div>
+
+      <!-- নোট -->
+      <div class="formula-note">
+        💡 <b>নোট:</b> কমলা রঙের বক্সগুলো <b>Auto</b> — ইউজার টাইপ করতে পারবে না। সাদা বক্সগুলো ইউজার নিজে লিখবে।
+      </div>
+
+    </div>
+
+    <!-- ফুটার -->
+    <div class="formula-modal-footer">
+      <button class="formula-modal-btn" onclick="closeFormulaModal()">বুঝেছি</button>
+    </div>
+
+  </div>
+</div>
+  
+<!-- ========== THEME MODAL ========== -->
+<div class="theme-modal-overlay" id="themeModalOverlay" onclick="if(event.target === this) closeThemeModal()">
+  <div class="theme-modal">
+    <h3>🎨 থিম পরিবর্তন করুন</h3>
+
+    <button class="theme-option" data-theme="light" onclick="setTheme('light')">
+      <span class="icon">☀️</span> লাইট মোড (সাদা)
+    </button>
+
+    <button class="theme-option" data-theme="dark" onclick="setTheme('dark')">
+      <span class="icon">🌙</span> ডার্ক মোড (গাঢ়)
+    </button>
+
+    <button class="theme-option" data-theme="amoled" onclick="setTheme('amoled')">
+      <span class="icon">🌑</span> অ্যামোলেড (একদম কালো)
+    </button>
+
+    <button class="sheet-cancel" onclick="closeThemeModal()" style="margin-top: 15px;">বাতিল করুন</button>
+  </div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/roz.js"></script>
+<!-- 🆕 Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+</body>
+</html>

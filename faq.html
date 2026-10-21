@@ -9,23 +9,115 @@
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="stylesheet" href="css/common.css">
 <style>
-  /* FAQ পেজের নিজস্ব স্টাইল */
+  /* ============ Hero Section (২য় ছবির মতো) ============ */
+  .faq-hero-section {
+    background: #1E3A8A;
+    padding: 30px 20px 30px;
+    border-radius: 30px 30px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 4px 15px rgba(30,58,138,0.2);
+  }
+
+  .faq-hero-title {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .faq-hero-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .faq-search-box {
+    width: 100%;
+    padding: 15px 20px 15px 45px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: inherit;
+    background: white url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="%2364748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 16px center;
+    color: #1E293B;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: 0.2s;
+  }
+  .faq-search-box:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.3);
+  }
+
+  .faq-categories {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 16px 15px;
+    margin-top: -15px;
+    position: relative;
+    z-index: 10;
+    scrollbar-width: none;
+  }
+  .faq-categories::-webkit-scrollbar { display: none; }
+
+  .faq-cat-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: white;
+    border: 1px solid #E2E8F0;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+    cursor: pointer;
+    font-family: inherit;
+    transition: 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+  .faq-cat-btn.active {
+    background: #2563EB;
+    color: white;
+    border-color: #2563EB;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+  }
+
+  .faq-group {
+    margin-bottom: 24px;
+  }
+  
+  .faq-group-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1E3A8A;
+    margin-bottom: 12px;
+    padding-left: 8px;
+    border-left: 4px solid #2563EB;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .faq-card {
     background: white;
     border-radius: 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    margin-bottom: 16px;
     overflow: hidden;
+    border: 1px solid #E2E8F0;
   }
+
   .faq-item {
     border-bottom: 1px solid #E2E8F0;
+    transition: background 0.2s;
   }
-  .faq-item:last-child {
-    border-bottom: none;
-  }
+  .faq-item:last-child { border-bottom: none; }
+  
   .faq-question {
     padding: 16px 20px;
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 600;
     color: #1E293B;
     cursor: pointer;
@@ -33,40 +125,55 @@
     justify-content: space-between;
     align-items: center;
     transition: background 0.2s;
+    line-height: 1.5;
   }
-  .faq-question:hover {
-    background: #F8FAFC;
-  }
+  .faq-question:hover { background: #F8FAFC; }
   .faq-question.active {
     color: #1E3A8A;
+    background: #EFF6FF;
   }
   .faq-icon {
-    font-size: 18px;
+    font-size: 16px;
     color: #94A3B8;
     transition: transform 0.3s;
+    flex-shrink: 0;
+    margin-left: 10px;
   }
   .faq-question.active .faq-icon {
     transform: rotate(180deg);
     color: #1E3A8A;
   }
+
   .faq-answer {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease-out;
+    transition: max-height 0.35s ease-out;
     background: #F8FAFC;
   }
   .faq-answer-content {
-    padding: 0 20px 16px 20px;
+    padding: 0 20px 18px 20px;
     font-size: 14px;
     color: #475569;
-    line-height: 1.6;
+    line-height: 1.7;
+    border-top: 1px dashed #E2E8F0;
+    padding-top: 14px;
+    margin-top: 4px;
   }
-  .faq-answer.open {
-    max-height: 500px; /* উত্তর বড় হলে এই সংখ্যা বাড়াতে হবে */
+  .faq-answer-content b { color: #1E293B; }
+  .faq-answer.open { max-height: 800px; }
+
+  .no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #64748B;
+    display: none;
+  }
+  .no-results .icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+    opacity: 0.5;
   }
 </style>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="js/sync.js"></script>
 </head>
 <body>
 
@@ -75,198 +182,469 @@
   <!-- ========== HEADER ========== -->
   <div class="header">
     <button class="back-btn" onclick="goHomePage()">←</button>
-    <h1>সাধারণ জিজ্ঞাসা</h1>
+    <h1>সাধারণ জিজ্ঞাসা (FAQ)</h1>
   </div>
 
-  <div class="screen">
-    <div class="home-title" style="padding-bottom: 10px;">
-      <p>অ্যাপটি কীভাবে ব্যবহার করবেন তা জানতে নিচের প্রশ্নগুলোতে ক্লিক করুন।</p>
-    </div>
+  <!-- ========== HERO SECTION & SEARCH ========== -->
+  <div class="faq-hero-section">
+    <div class="faq-hero-title">আপনার কী জানা দরকার?</div>
+    <div class="faq-hero-subtitle">অ্যাপটি ব্যবহারের নিয়মাবলী সম্পর্কে এখানে বিস্তারিত পাবেন</div>
+    <input type="text" class="faq-search-box" id="faqSearch" placeholder="যেকোনো প্রশ্ন বা শব্দ দিয়ে খুঁজুন..." oninput="filterFaq()">
+  </div>
 
-    <div class="faq-card">
-      
-      <!-- প্রশ্ন ১ -->
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">
-          নতুন এন্ট্রি (খরচ বা বিক্রয়) কীভাবে যোগ করব?
-          <span class="faq-icon">▼</span>
-        </div>
-        <div class="faq-answer">
-          <div class="faq-answer-content">
-            হোম স্ক্রিন থেকে নির্দিষ্ট হিসাব (যেমন: বাসার হিসাব) সিলেক্ট করুন। সেখানে ফর্মটি দেখতে পাবেন। প্রয়োজনীয় তথ্য (তারিখ, খাত, পরিমাণ ইত্যাদি) পূরণ করে নিচের <b>Save</b> বাটনে ক্লিক করুন। ফর্মটি খালি হয়ে যাবে, তখন আপনি পরের এন্ট্রিটি দিতে পারবেন।
+  <!-- ========== CATEGORY FILTERS ========== -->
+  <div class="faq-categories" id="catContainer">
+    <button class="faq-cat-btn active" data-cat="all" onclick="filterCategory('all')">সবগুলো</button>
+    <button class="faq-cat-btn" data-cat="basic" onclick="filterCategory('basic')">সাধারণ ব্যবহার</button>
+    <button class="faq-cat-btn" data-cat="data" onclick="filterCategory('data')">ডেটা ও ব্যাকআপ</button>
+    <button class="faq-cat-btn" data-cat="roz" onclick="filterCategory('roz')">রোজ হিসাব</button>
+    <button class="faq-cat-btn" data-cat="shop" onclick="filterCategory('shop')">দোকান ও মালামাল</button>
+    <button class="faq-cat-btn" data-cat="features" onclick="filterCategory('features')">বিশেষ ফিচার</button>
+    <button class="faq-cat-btn" data-cat="troubleshoot" onclick="filterCategory('troubleshoot')">সমস্যা ও সমাধান</button>
+  </div>
+
+  <div class="screen" style="padding-top: 0;">
+
+    <!-- ================= ১. সাধারণ ব্যবহার (Basic) ================= -->
+    <div class="faq-group" data-category="basic">
+      <div class="faq-group-title">📱 সাধারণ ব্যবহার</div>
+      <div class="faq-card">
+        
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            নতুন এন্ট্রি (খরচ বা বিক্রয়) কীভাবে যোগ করব?
+            <span class="faq-icon">▼</span>
           </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            হোম স্ক্রিন থেকে নির্দিষ্ট হিসাব (যেমন: বাসার হিসাব বা রোজ হিসাব) সিলেক্ট করুন। সেখানে ফর্মটি দেখতে পাবেন। প্রয়োজনীয় তথ্য পূরণ করে নিচের <b>Save</b> বাটনে ক্লিক করুন। ফর্মটি খালি হয়ে যাবে, তখন আপনি পরের এন্ট্রিটি দিতে পারবেন।
+          </div></div>
         </div>
-      </div>
 
-      <!-- প্রশ্ন ২ -->
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">
-          কোনো পুরনো এন্ট্রি কীভাবে এডিট বা ডিলিট করব?
-          <span class="faq-icon">▼</span>
-        </div>
-        <div class="faq-answer">
-          <div class="faq-answer-content">
-            <b>Statistics</b> ট্যাবে যান। যে এন্ট্রিটি এডিট বা ডিলিট করতে চান, সেটির ওপর ক্লিক করুন। ফর্মটি ওপেন হবে। সেখানে তথ্য পরিবর্তন করে <b>Save</b> চাপলে এডিট হবে। আর <b>Delete</b> চাপলে পুরো এন্ট্রিটি মুছে যাবে।
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            কোনো পুরনো এন্ট্রি কীভাবে এডিট বা ডিলিট করব?
+            <span class="faq-icon">▼</span>
           </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            <b>Statistics</b> ট্যাবে যান। যে এন্ট্রিটি এডিট বা ডিলিট করতে চান, সেটির ওপর ক্লিক করুন। ফর্মটি ওপেন হবে। তথ্য পরিবর্তন করে <b>Save</b> চাপলে এডিট হবে। আর <b>Delete</b> চাপলে পুরো এন্ট্রিটি মুছে যাবে।
+          </div></div>
         </div>
-      </div>
 
-      <!-- প্রশ্ন ৩ -->
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">
-          একসাথে অনেকগুলো এন্ট্রি কীভাবে ডিলিট করব?
-          <span class="faq-icon">▼</span>
-        </div>
-        <div class="faq-answer">
-          <div class="faq-answer-content">
-            Statistics ট্যাবে গিয়ে <b>Select</b> বাটনে ক্লিক করুন। তখন প্রতিটি রো-এর পাশে চেকবক্স আসবে। আপনি যতগুলো ডিলিট করতে চান, টিক দিন। এরপর উপরের <b>Delete</b> বাটনে ক্লিক করলে একসাথে সব ডিলিট হয়ে যাবে।
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            একসাথে অনেকগুলো এন্ট্রি কীভাবে ডিলিট করব?
+            <span class="faq-icon">▼</span>
           </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            Statistics ট্যাবে গিয়ে <b>Select</b> বাটনে ক্লিক করুন। তখন প্রতিটি রো-এর পাশে চেকবক্স আসবে। আপনি যতগুলো ডিলিট করতে চান, টিক দিন। এরপর উপরের <b>Delete</b> বাটনে ক্লিক করলে একসাথে সব ডিলিট হয়ে যাবে।
+          </div></div>
         </div>
-      </div>
 
-      <!-- প্রশ্ন ৪ -->
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">
-          নতুন খাত বা দোকানের নাম কীভাবে যোগ করব?
-          <span class="faq-icon">▼</span>
-        </div>
-        <div class="faq-answer">
-          <div class="faq-answer-content">
-            বাসার হিসাবে 'খাতের ধরন' এবং দোকানের হিসাবে 'দোকানের নাম' ফিল্ডে ক্লিক করলে একটি ড্রপডাউন আসবে। সেখানে নিচের দিকে <b>➕ নতুন খাত যোগ করুন</b> বা <b>➕ নতুন দোকান যোগ করুন</b> বাটনে ক্লিক করে নাম লিখে সেভ করুন। এটি সবসময় অ্যাপে থেকে যাবে।
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            নতুন খাত বা দোকানের নাম কীভাবে যোগ করব?
+            <span class="faq-icon">▼</span>
           </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            বাসার হিসাবে 'খাতের ধরন' এবং দোকানের হিসাবে 'দোকানের নাম' ফিল্ডে ক্লিক করলে একটি ড্রপডাউন আসবে। সেখানে নিচের দিকে <b>➕ নতুন খাত যোগ করুন</b> বা <b>➕ নতুন দোকান যোগ করুন</b> বাটনে ক্লিক করে নাম লিখে সেভ করুন।
+          </div></div>
         </div>
-      </div>
 
-      <!-- প্রশ্ন ৫ -->
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">
-          ডেটা ব্যাকআপ ও রিস্টোর কীভাবে করব?
-          <span class="faq-icon">▼</span>
-        </div>
-        <div class="faq-answer">
-          <div class="faq-answer-content">
-            হোম স্ক্রিনের ডানদিকের <b>⋮ (তিন ডট)</b> মেনুতে ক্লিক করুন। সেখানে <b>ব্যাকআপ ডাউনলোড</b> অপশন পাবেন। এটি একটি ফাইল হিসেবে আপনার ফোনে/কম্পিউটারে সেভ হবে। ভবিষ্যতে ডেটা হারালে বা নতুন ফোনে ওই ফাইলটি সিলেক্ট করে <b>ব্যাকআপ রিস্টোর</b> করলে সব ডেটা ফিরে আসবে।
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            মোবাইলে অ্যাপের ফন্ট সাইজ কি পরিবর্তন করা যায়?
+            <span class="faq-icon">▼</span>
           </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            হ্যাঁ, তবে এটি অ্যাপের ভেতর থেকে নয়। আপনি আপনার ফোনের <b>Settings > Display > Font Size</b> এ গিয়ে ফন্ট সাইজ পরিবর্তন করলে অ্যাপেও তার প্রভাব পড়বে।
+          </div></div>
         </div>
-      </div>
 
-      <!-- প্রশ্ন ৬ -->
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">
-          অ্যাপটি হোম স্ক্রিনে (মোবাইলে) কীভাবে ইনস্টল করব?
-          <span class="faq-icon">▼</span>
-        </div>
-        <div class="faq-answer">
-          <div class="faq-answer-content">
-            Android-এ Chrome ব্রাউজার দিয়ে অ্যাপটি খুললে উপরে ডানে <b>⋮ (তিন ডট)</b> মেনুতে ক্লিক করুন এবং <b>"Install app"</b> বা <b>"Add to Home screen"</b> সিলেক্ট করুন। ইনস্টল হয়ে গেলে এটি একটি সত্যিকারের অ্যাপের মতো ফোনের হোম স্ক্রিনে কাজ করবে।
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            বাসার হিসাবে ডিফল্ট খাতগুলো কী কী?
+            <span class="faq-icon">▼</span>
           </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            শুরুতে বাজার, বিল, চিকিৎসা এবং যাতায়াত এই ৪টি খাত দেওয়া থাকে। তবে আপনি চাইলে নিজের ইচ্ছেমতো নতুন খাত যোগ, এডিট বা ডিলিট করতে পারবেন।
+          </div></div>
         </div>
-      </div>
 
-      <!-- প্রশ্ন ৭ -->
-      <div class="faq-item">
-        <div class="faq-question" onclick="toggleFaq(this)">
-          আমার ডেটা কি ইন্টারনেট ছাড়া কাজ করবে?
-          <span class="faq-icon">▼</span>
-        </div>
-        <div class="faq-answer">
-          <div class="faq-answer-content">
-            হ্যাঁ, সম্পূর্ণভাবে! আপনার সব ডেটা আপনার নিজের ফোন/কম্পিউটারের ব্রাউজারে (Local Storage) সেভ থাকে। তাই ইন্টারনেট বন্ধ থাকলেও আপনি নির্ভয়ে এন্ট্রি দিতে পারবেন এবং ডেটা দেখতে পারবেন।
+      </div>
+    </div>
+
+    <!-- ================= ২. ডেটা ও ব্যাকআপ (Data) ================= -->
+    <div class="faq-group" data-category="data">
+      <div class="faq-group-title">☁️ ডেটা ও ব্যাকআপ</div>
+      <div class="faq-card">
+        
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            আমার ডেটা কি ইন্টারনেট ছাড়া কাজ করবে?
+            <span class="faq-icon">▼</span>
           </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            হ্যাঁ, সম্পূর্ণভাবে! আপনার সব ডেটা আপনার নিজের ফোনের ব্রাউজারে (Local Storage) সেভ থাকে। তাই ইন্টারনেট বন্ধ থাকলেও আপনি নির্ভয়ে এন্ট্রি দিতে পারবেন এবং ডেটা দেখতে পারবেন।
+          </div></div>
         </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            ডেটা ব্যাকআপ ও রিস্টোর কীভাবে করব?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            হোম স্ক্রিনের ডানদিকের <b>⋮ (তিন ডট)</b> মেনুতে ক্লিক করুন। সেখানে <b>ব্যাকআপ ডাউনলোড</b> অপশন পাবেন। এটি একটি JSON ফাইল হিসেবে সেভ হবে। ভবিষ্যতে ডেটা হারালে ওই ফাইলটি সিলেক্ট করে <b>ব্যাকআপ রিস্টোর</b> করলে সব ডেটা ফিরে আসবে।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            Google Drive সিঙ্ক কীভাবে কাজ করে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            আপনি যদি অ্যাপে Google অ্যাকাউন্ট দিয়ে লগইন করেন, তবে আপনার সব ডেটা আপনার গুগল ড্রাইভের গোপন ফোল্ডারে সেভ হবে। এর ফলে আপনি অন্য ফোন বা কম্পিউটারেও একই ডেটা পাবেন।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            অটো-সিঙ্ক কী এবং কীভাবে কাজ করে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            অটো-সিঙ্ক চালু থাকলে, আপনি যখনই নতুন কোনো এন্ট্রি সেভ করবেন, অ্যাপটি ২ সেকেন্ড পর ব্যাকগ্রাউন্ডে গুগল ড্রাইভে ডেটা পাঠিয়ে দেবে। ফলে আপনাকে আলাদা করে সিঙ্ক বাটনে চাপতে হবে না। সেটিংস থেকে এটি চালু বা বন্ধ করা যায়।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            গুগল ড্রাইভ সিঙ্ক করা ডেটা কি কেউ দেখতে পাবে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            না, একদমই না। অ্যাপটি গুগলের <b>AppDataFolder</b> ব্যবহার করে, যা শুধুমাত্র এই অ্যাপের জন্যই সংরক্ষিত থাকে। গুগল ড্রাইভের সাধারণ ফাইল লিস্টে এটি দেখা যায় না, এবং অন্য কেউ এটি অ্যাক্সেস করতে পারে না।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            অ্যাপের ডেটা কি অন্য কারো সাথে শেয়ার হয়?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            না, আপনার আর্থিক তথ্য সম্পূর্ণ গোপন ও নিরাপদ। অ্যাপটি কোনো থার্ড-পার্টি সার্ভারে ডেটা পাঠায় না বা ট্র্যাক করে না।
+          </div></div>
+        </div>
+
       </div>
-<!-- প্রশ্ন ৮ -->
-<div class="faq-item">
-  <div class="faq-question" onclick="toggleFaq(this)">
-    ফিল্টার, সর্ট এবং সার্চ কীভাবে কাজ করে?
-    <span class="faq-icon">▼</span>
-  </div>
-  <div class="faq-answer">
-    <div class="faq-answer-content">
-      Statistics পেজের উপরে একটি সার্চ বক্স আছে, যেখানে নাম বা বিবরণ লিখে খোঁজা যায়। এর নিচে <b>ফিল্টার</b> বাটনে ক্লিক করে নির্দিষ্ট মাস বা খাত অনুযায়ী ডেটা দেখতে পারবেন। আর <b>সর্ট</b> বাটন দিয়ে তারিখ বা টাকার পরিমাণ অনুযায়ী ডেটা সাজাতে পারবেন।
     </div>
-  </div>
-</div>
 
-<!-- প্রশ্ন ৯ -->
-<div class="faq-item">
-  <div class="faq-question" onclick="toggleFaq(this)">
-    CSV এক্সপোর্ট করে কী লাভ?
-    <span class="faq-icon">▼</span>
-  </div>
-  <div class="faq-answer">
-    <div class="faq-answer-content">
-      <b>CSV</b> ফাইল মূলত Excel বা Google Sheets-এ ওপেন করার জন্য ব্যবহার হয়। আপনি যদি আপনার হিসাবগুলো কম্পিউটারে এনে সুন্দরভাবে অ্যানালাইসিস করতে চান বা প্রিন্ট করতে চান, তবে Statistics পেজ থেকে CSV ডাউনলোড করে নিতে পারেন।
-    </div>
-  </div>
-</div>
+    <!-- ================= ৩. রোজ হিসাব (Roz) ================= -->
+    <div class="faq-group" data-category="roz">
+      <div class="faq-group-title">📅 রোজ হিসাব</div>
+      <div class="faq-card">
 
-<!-- প্রশ্ন ১০ -->
-<div class="faq-item">
-  <div class="faq-question" onclick="toggleFaq(this)">
-    "শুধু ডুপ্লিকেট দেখান" অপশনটা কী কাজে লাগে?
-    <span class="faq-icon">▼</span>
-  </div>
-  <div class="faq-answer">
-    <div class="faq-answer-content">
-      ধরুন, আপনি একই নামের ক্রেতা বা দোকানের একাধিক লেনদেন দেখতে চান। ফিল্টার প্যানেলে এই অপশনটি টিক দিয়ে দিলে, অ্যাপটি খুঁজে বের করবে কার কার নাম একাধিকবার লেখা হয়েছে এবং শুধু তাদের ডেটাগুলো দেখাবে।
-    </div>
-  </div>
-</div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            রোজ হিসাবের অটো-ক্যালকুলেশন ফর্মুলাগুলো কী?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            রোজ হিসাব পেজের হেডারে থাকা <b>💡 (বাল্ব) বাটনে</b> ক্লিক করলে সব ফর্মুলা দেখতে পাবেন। যেমন: মোট = বিকাশ+বাধন+মার্চেন্ট..., মোট খরচ = খরচ+সঞ্চয়+মালামাল ক্রয়, ইত্যাদি। কমলা রঙের বক্সগুলো অটো-ক্যালকুলেটেড।
+          </div></div>
+        </div>
 
-<!-- প্রশ্ন ১১ -->
-<div class="faq-item">
-  <div class="faq-question" onclick="toggleFaq(this)">
-    বাসার হিসাবে "ক্যাশ + বিকাশ = পরিমাণ" না হলে সেভ হয় না কেন?
-    <span class="faq-icon">▼</span>
-  </div>
-  <div class="faq-answer">
-    <div class="faq-answer-content">
-      এটি হিসাব ঠিক রাখার একটি নিয়ম। আপনি যদি মোট পরিমাণ ৫০০ টাকা লেখেন, কিন্তু ক্যাশ ও বিকাশ মিলিয়ে ৪০০ টাকা লেখেন, তবে হিসাবে গরমিল থেকে যায়। তাই অ্যাপ নিশ্চিত করে যে আপনার দেওয়া ক্যাশ ও বিকাশের যোগফল মোট পরিমাণের সমান হয়।
-    </div>
-  </div>
-</div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            রোজ হিসাবে "দেনা" ফিল্ড কীভাবে কাজ করে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            "দেনা" ফিল্ডে আপনি সাধারণ ইনপুট দিতে পারবেন এবং Math Calculator (+ - * / %) ব্যবহার করতে পারবেন। এই দেনার ওপর ভিত্তি করে অটোমেটিক <b>ঘাটতি / উদ্ধৃত্ত</b> ফিল্ডটি হিসাব হবে (অবশিষ্ট টাকা − দেনা)।
+          </div></div>
+        </div>
 
-<!-- প্রশ্ন ১২ -->
-<div class="faq-item">
-  <div class="faq-question" onclick="toggleFaq(this)">
-    সারাংশের রঙিন বক্সগুলো কী বোঝায়?
-    <span class="faq-icon">▼</span>
-  </div>
-  <div class="faq-answer">
-    <div class="faq-answer-content">
-      Statistics পেজের উপরের রঙিন বক্সগুলো আপনার মোট হিসাবের সারসংক্ষেপ। যেমন- বাসার হিসাবে <b>মোট খরচ</b> ও <b>মোট এন্ট্রি</b> কতটি, দোকানের হিসাবে <b>মোট বিক্রয়, বাকি, আদায় এবং খরচ</b> কত। আপনি <b>Select</b> মোডে গিয়ে কয়েকটি রো সিলেক্ট করলে বক্সগুলোতে শুধু ওই সিলেক্ট করা রো-এর মোট হিসাব দেখাবে।
-    </div>
-  </div>
-</div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            রোজ হিসাবের চার্টটি কীভাবে কাজ করে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            Statistics পেজে <b>📊 চার্ট দেখুন</b> বাটনে ক্লিক করলে চার্ট ওপেন হবে। সেখানে দিন, মাস ও বছর সিলেক্ট করে আয়ের সোর্স, খরচের সারাংশ এবং সারাংশ (অবশিষ্ট টাকা, দেনা) খুব সুন্দরভাবে দেখতে পারবেন।
+          </div></div>
+        </div>
+        
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            "মার্চেন্ট ৩২৮" বা "বাধন" ফিল্ডগুলো কী?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            এগুলো আপনার আয়ের সোর্স বা নির্দিষ্ট অ্যাকাউন্টের নাম। আপনি চাইলে এই ফিল্ডগুলোতে নিজের মতো নাম দিয়ে টাকা এন্ট্রি করতে পারেন। এগুলো শুধু ট্র্যাকিংয়ের সুবিধার জন্য দেওয়া হয়েছে।
+          </div></div>
+        </div>
 
-<!-- প্রশ্ন ১৩ -->
-<div class="faq-item">
-  <div class="faq-question" onclick="toggleFaq(this)">
-    এই অ্যাপের ডেটা কি অন্য কারো সাথে শেয়ার হয়?
-    <span class="faq-icon">▼</span>
-  </div>
-  <div class="faq-answer">
-    <div class="faq-answer-content">
-      না, একদমই না। আপনার সব ডেটা আপনার নিজের ফোনের ভেতরেই (Local Storage) সুরক্ষিত থাকে। এটি কোনো ইন্টারনেট সার্ভারে বা ক্লাউডে যায় না। তাই আপনার আর্থিক তথ্য সম্পূর্ণ গোপন ও নিরাপদ।
+      </div>
     </div>
-  </div>
-</div>
+
+    <!-- ================= ৪. দোকান ও মালামাল (Shop & Goods) ================= -->
+    <div class="faq-group" data-category="shop">
+      <div class="faq-group-title">🏪 দোকান ও মালামাল</div>
+      <div class="faq-card">
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            দোকানের হিসাবে বিক্রেতা (Seller) যোগ করব কীভাবে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            দোকানের হিসাব পেজের ফর্মে <b>বিক্রয়কারীর নাম</b> ফিল্ডে ক্লিক করলে একটি ড্রপডাউন আসবে। সেখানে <b>➕ নতুন বিক্রেতা যোগ করুন</b> বাটনে ক্লিক করে নাম লিখে সেভ করুন। এই বিক্রেতা চার্ট ও ফিল্টারে কাজে লাগবে।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            মালামাল ক্রয়ের হিসাবে দোকানের নাম কীভাবে ড্রপডাউনে আসবে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            মালামাল ক্রয়ের ফর্মে <b>দোকানের নাম</b> ফিল্ডে ক্লিক করলে ড্রপডাউন আসবে। সেখানে <b>➕ নতুন দোকান যোগ করুন</b> বাটনে ক্লিক করে নাম সেভ করলে তা পরবর্তীতে অটোমেটিক ড্রপডাউনে চলে আসবে।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            দোকানের হিসাবে "বাকি" এবং "বাকি প্রাপ্ত" এর পার্থক্য কী?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            <b>বাকি:</b> ক্রেতা আপনার কাছে যে টাকা এখনো দেয়নি। <br>
+            <b>বাকি প্রাপ্ত:</b> পূর্বের কোনো বাকি থেকে ক্রেতা আজ যে টাকা পরিশোধ করেছে।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            মালামাল ক্রয়ে "নগদ" এবং "বাকি" কীভাবে কাজ করে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            ধরুন, আপনি ১০০০ টাকার মাল কিনলেন। এর মধ্যে ৬০০ টাকা নগদ দিলেন এবং ৪০০ টাকা বাকি রইল। তাহলে <b>মূল্য: ১০০০</b>, <b>নগদ: ৬০০</b> এবং <b>বাকি: ৪০০</b> লিখবেন। 
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            দোকানের চার্টে "সব দোকান" এবং নির্দিষ্ট দোকান বলতে কী বোঝায়?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            <b>সব দোকান:</b> নির্বাচন করলে আপনার সব দোকানের বিক্রয়, বাকি, প্রাপ্তি একটি গ্রুপড চার্টে একসাথে দেখাবে। <br>
+            <b>নির্দিষ্ট দোকান:</b> নির্বাচন করলে শুধু ওই দোকানের ৪টি ক্যাটাগরি (বিক্রয়, বাকি, প্রাপ্তি, খরচ) আলাদাভাবে বার-চার্টে দেখাবে।
+          </div></div>
+        </div>
+
+      </div>
     </div>
+
+    <!-- ================= ৫. বিশেষ ফিচার (Features) ================= -->
+    <div class="faq-group" data-category="features">
+      <div class="faq-group-title">✨ বিশেষ ফিচার</div>
+      <div class="faq-card">
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            Math Calculator (হিসাবের হিন্ট) কীভাবে ব্যবহার করব?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            যেকোনো টাকার বক্সে (যেমন: মূল্য বা ক্যাশ) আপনি <b>250+30</b>, <b>100*5</b>, <b>100+10%</b> এভাবে লিখে <b>=</b> বাটনে ক্লিক করুন বা কিবোর্ডের <b>Enter</b> চাপুন। অ্যাপটি সাথে সাথে হিসাব করে ফলাফল বসিয়ে দেবে।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            বাংলা এবং ইংরেজি সংখ্যা একসাথে লিখলে কী হবে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            আপনি বাংলায় <b>২৫০</b> অথবা ইংরেজিতে <b>250</b> যেভাবেই টাইপ করুন না কেন, অ্যাপটি স্বয়ংক্রিয়ভাবে সেটিকে ইংরেজিতে রূপান্তর করে নেবে, যাতে সিস্টেমের হিসাব ঠিক থাকে এবং Statistics পেজে বাংলায় সুন্দরভাবে দেখায়।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            ফিল্টার, সর্ট এবং সার্চ কীভাবে কাজ করে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            Statistics পেজের উপরে সার্চ বক্সে নাম/বিবরণ লিখে খোঁজা যায়। <b>ফিল্টার</b> বাটনে ক্লিক করে নির্দিষ্ট মাস বা খাত অনুযায়ী ডেটা দেখতে পারবেন। আর <b>সর্ট</b> বাটন দিয়ে তারিখ বা টাকার পরিমাণ অনুযায়ী ডেটা সাজাতে পারবেন।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            CSV এক্সপোর্ট করে কী লাভ?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            <b>CSV</b> ফাইল Excel বা Google Sheets-এ ওপেন করার জন্য ব্যবহার হয়। আপনি যদি আপনার হিসাবগুলো কম্পিউটারে এনে অ্যানালাইসিস করতে চান, তবে Statistics পেজ থেকে CSV ডাউনলোড করে নিতে পারেন।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            PDF এক্সপোর্ট বা প্রিন্ট কীভাবে করব?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            Statistics পেজে <b>📥 এক্সপোর্ট</b> বাটনে ক্লিক করে <b>PDF</b> সিলেক্ট করুন। এটি আপনার ফোনের প্রিন্ট মেনু ওপেন করবে, সেখান থেকে <b>Save as PDF</b> সিলেক্ট করে সুন্দর রিপোর্ট সেভ করতে পারবেন।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            থিম (Light, Dark, AMOLED) কীভাবে পরিবর্তন করব?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            হোম পেজের ডানদিকের <b>⚙️ (সেটিংস)</b> আইকনে ক্লিক করে <b>থিম পরিবর্তন করুন</b> বাটনে যান। সেখানে লাইট, ডার্ক এবং AMOLED মোডের অপশন পাবেন।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            "শুধু ডুপ্লিকেট দেখান" অপশনটা কী কাজে লাগে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            ধরুন, আপনি একই নামের ক্রেতা বা দোকানের একাধিক লেনদেন দেখতে চান। ফিল্টার প্যানেলে এই অপশনটি টিক দিয়ে দিলে, অ্যাপটি শুধু তাদের ডেটাগুলো দেখাবে যাদের নাম একাধিকবার লেখা হয়েছে।
+          </div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= ৬. সমস্যা ও সমাধান (Troubleshoot) ================= -->
+    <div class="faq-group" data-category="troubleshoot">
+      <div class="faq-group-title">🛠️ সমস্যা ও সমাধান</div>
+      <div class="faq-card">
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            বাসার হিসাবে "ক্যাশ + বিকাশ = পরিমাণ" না হলে সেভ হয় না কেন?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            এটি হিসাব ঠিক রাখার একটি নিয়ম। মোট পরিমাণ ৫০০ টাকা হলে ক্যাশ ও বিকাশ মিলিয়ে ৫০০ টাকা হতে হবে। তাই অ্যাপ নিশ্চিত করে যে আপনার দেওয়া ক্যাশ ও বিকাশের যোগফল মোট পরিমাণের সমান হয়।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            অ্যাপটি হোম স্ক্রিনে (মোবাইলে) কীভাবে ইনস্টল করব?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            Android-এ Chrome ব্রাউজার দিয়ে অ্যাপটি খুললে উপরে ডানে <b>⋮ (তিন ডট)</b> মেনুতে ক্লিক করুন এবং <b>"Install app"</b> সিলেক্ট করুন। iPhone-এ Safari ব্রাউজার দিয়ে শেয়ার আইকনে ক্লিক করে <b>"Add to Home Screen"</b> সিলেক্ট করুন।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            অ্যাপ আপডেট করলে আমার ডেটা মুছে যাবে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            না, ডেটা মুছবে না। যতক্ষণ আপনি ব্রাউজারের ডেটা বা ক্যাশে ক্লিয়ার করবেন না, ততক্ষণ আপনার সব ডেটা নিরাপদে থাকবে। তবে নিরাপত্তার জন্য মাঝে মাঝে ব্যাকআপ ডাউনলোড করে রাখা ভালো।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            কিবোর্ডে + - * / চিহ্ন দেখা যাচ্ছে না কেন?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            অ্যাপটি আপনাকে সাধারণ কিবোর্ড ব্যবহারের সুবিধা দেয়। যদি আপনার ফোনের কিবোর্ডে চিহ্নগুলো না থাকে, তবে নম্বর লিখে রাখার পর "+" বা "-" বাটনে চাপ দিয়ে দেখুন, অথবা কিবোর্ডের <b>?123</b> বা <b>sym</b> বাটনে গিয়ে চিহ্নগুলো খুঁজুন।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            গুগল ড্রাইভ সিঙ্ক কাজ করছে না কেন?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            প্রথমে নিশ্চিত করুন আপনার ইন্টারনেট কানেকশন ঠিক আছে। এরপর সেটিংসে গিয়ে <b>অ্যাকাউন্ট স্ট্যাটাস</b> চেক করুন। যদি লগআউট হয়ে যায়, তবে আবার <b>Google Drive-এ লগইন করুন</b> বাটনে ক্লিক করে লগইন করুন।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            অ্যাপের গতি ধীর মনে হচ্ছে, কী করব?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            যদি আপনার অনেক দিনের পুরনো এবং অনেক বেশি ডেটা জমে থাকে, তবে অ্যাপ কিছুটা ধীর হতে পারে। আপনি ব্যাকআপ নিয়ে পুরনো ডেটা ডিলিট করে দিতে পারেন। অথবা ব্রাউজার রিফ্রেশ করে দেখুন।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            স্প্ল্যাশ স্ক্রিন (লোগো) দেখানোর পর লগইন পেজ আসে না কেন?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            আপনি যদি আগে একবার লগইন করেন বা <b>"লগইন ছাড়া চালিয়ে যান"</b> সিলেক্ট করেন, তবে অ্যাপ আপনাকে সরাসরি হোম পেজে নিয়ে যাবে। আবার লগইন স্ক্রিন দেখতে চাইলে ব্রাউজারের Local Storage ক্লিয়ার করুন।
+          </div></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            ডেটা এন্ট্রি করার সময় অ্যাপ বন্ধ হয়ে গেলে কী হবে?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            অ্যাপটি অটো-সেভ করে না। তাই আপনি যদি <b>Save</b> বাটনে ক্লিক করার আগেই অ্যাপ বন্ধ হয়ে যায়, তবে ওই এন্ট্রিটি সেভ হবে না। তাই দ্রুত <b>Save</b> বাটনে ক্লিক করার অভ্যাস গড়ুন।
+          </div></div>
+        </div>
+        
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            অ্যাপের ডেটা কম্পিউটারে নিয়ে কীভাবে দেখব?
+            <span class="faq-icon">▼</span>
+          </div>
+          <div class="faq-answer"><div class="faq-answer-content">
+            Statistics পেজ থেকে <b>CSV</b> ফাইল ডাউনলোড করুন। তারপর সেটি কম্পিউটারে Excel বা Google Sheets দিয়ে ওপেন করলেই আপনার সব ডেটা সুন্দর টেবিল আকারে দেখতে পাবেন।
+          </div></div>
+        </div>
+
+      </div>
+    </div>
+    
+    <!-- No Results State -->
+    <div class="no-results" id="noResults">
+      <div class="icon">🔍</div>
+      <p>দুঃখিত, আপনার খোঁজা প্রশ্নটি পাওয়া যায়নি।</p>
+    </div>
+
   </div>
 </div>
 
 <!-- ========== TOAST ========== -->
 <div class="toast" id="toast"></div>
 
+<!-- 🆕 FIX #10: sync.js সরানো হয়েছে — এখানে দরকার নেই -->
 <script src="js/common.js"></script>
 <script>
+  // Function to toggle FAQ accordion
   function toggleFaq(element) {
-    // একটিভ ক্লাস টগল করা
     element.classList.toggle('active');
-    
-    // উত্তর অংশটি খোলা/বন্ধ করা
     const answer = element.nextElementSibling;
+    
     if (answer.classList.contains('open')) {
       answer.classList.remove('open');
       answer.style.maxHeight = null;
@@ -274,8 +652,67 @@
       answer.classList.add('open');
       answer.style.maxHeight = answer.scrollHeight + "px";
     }
+  }
 
-    // চাইলে এখানে অন্য সব খোলা প্রশ্ন বন্ধ করার লজিক দিতে পারেন
+  let currentCategory = 'all';
+  let searchQuery = '';
+
+  function filterCategory(cat) {
+    currentCategory = cat;
+    
+    document.querySelectorAll('.faq-cat-btn').forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.cat === cat) btn.classList.add('active');
+    });
+    
+    applyFilters();
+  }
+
+  function filterFaq() {
+    searchQuery = document.getElementById('faqSearch').value.toLowerCase().trim();
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const groups = document.querySelectorAll('.faq-group');
+    let visibleCount = 0;
+
+    groups.forEach(group => {
+      const groupCat = group.dataset.category;
+      const items = group.querySelectorAll('.faq-item');
+      let groupHasVisibleItems = false;
+
+      items.forEach(item => {
+        const questionText = item.querySelector('.faq-question').textContent.toLowerCase();
+        const answerText = item.querySelector('.faq-answer-content').textContent.toLowerCase();
+        
+        const matchCategory = (currentCategory === 'all' || groupCat === currentCategory);
+        const matchSearch = questionText.includes(searchQuery) || answerText.includes(searchQuery);
+
+        if (matchCategory && matchSearch) {
+          item.style.display = 'block';
+          groupHasVisibleItems = true;
+          visibleCount++;
+        } else {
+          // 🆕 FIX #9: শুধু display লুকাই, class পরিবর্তন করি না
+          // সার্চ ক্লিয়ার করলে আগের খোলা/বন্ধ state ফিরে আসবে
+          item.style.display = 'none';
+        }
+      });
+
+      if (groupHasVisibleItems) {
+        group.style.display = 'block';
+      } else {
+        group.style.display = 'none';
+      }
+    });
+
+    const noResults = document.getElementById('noResults');
+    if (visibleCount === 0) {
+      noResults.style.display = 'block';
+    } else {
+      noResults.style.display = 'none';
+    }
   }
 </script>
 </body>

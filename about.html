@@ -10,10 +10,10 @@
 <link rel="stylesheet" href="css/common.css">
 <style>
     .about-logo {
-    width: 90px;      /* কন্টেইনার একটু বড় করা হলো */
+    width: 90px;
     height: 90px;
     margin: 0 auto 16px auto;
-    overflow: hidden; /* বাইরের অংশ কাটার জন্য */
+    overflow: hidden;
     border-radius: 20px;
     background: white;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -22,7 +22,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transform: scale(1.3); /* লোগো ভেতরে জুম করে সাদা অংশ কমানো হলো */
+    transform: scale(1.3);
     border-radius: 20px;
   }
   .about-header {
@@ -124,7 +124,7 @@
   transition: color 0.2s, transform 0.2s;
 }
 .feedback-stars span.active {
-  color: #F59E0B; /* সোনালী রঙ */
+  color: #F59E0B;
   transform: scale(1.1);
 }
 .feedback-textarea {
@@ -159,8 +159,6 @@
   transform: scale(0.98);
 }
 </style>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="js/sync.js"></script>
 </head>
 <body>
 
@@ -187,7 +185,7 @@
     <!-- অ্যাপের বর্ণনা -->
     <div class="about-card">
       <h3>📖 অ্যাপটি কী?</h3>
-      <p>এটি একটি সম্পূর্ণ অফলাইন ভিত্তিক ওয়েব অ্যাপ্লিকেশন। এর মাধ্যমে আপনি আপনার <b>বাসার হিসাব, দোকানের হিসাব এবং মালামাল ক্রয়ের হিসাব</b> খুব সহজে রাখতে পারবেন। আপনার সব ডেটা আপনার নিজের ডিভাইসেই সুরক্ষিত থাকে, যা গুগল ড্রাইভের মাধ্যমে একাধিক ডিভাইসে সিঙ্কও করা যায়।</p>
+      <p>এটি একটি সম্পূর্ণ অফলাইন ভিত্তিক ওয়েব অ্যাপ্লিকেশন। এর মাধ্যমে আপনি আপনার <b>বাসার হিসাব, দোকানের হিসাব এবং মালামাল ক্রয়ের হিসাব</b> খুব সহজে রাখতে পারবেন। আপনার সব ডেটা আপনার নিজের ডিভাইসেই সুরক্ষিত থাকে, যা গুগল ড্রাইভের মাধ্যমে একাধিক ডিভাইসে সিঙ্কও করা যায়।</p>
     </div>
 
     <!-- রেটিং ও ফিডব্যাক -->
@@ -222,7 +220,7 @@
         <div class="credit-icon blue">👤</div>
         <div class="credit-text">
           <h4>নিশাত হোসেন বাঁধন</h4>
-          <p>আইডিয়া, ডিজাইন এবং প্রজেক্ট ম্যানেজমেন্ট</p>
+          <p>আইডিয়া, ডিজাইন এবং প্রজেক্ট ম্যানেজমেন্ট</p>
         </div>
       </div>
 
@@ -266,7 +264,7 @@
 
     <!-- ধন্যবাদ -->
     <div class="thank-you">
-      "আমাদের এই ছোট্ট প্রয়াসে আপনাদের পাশে পেয়ে আমরা কৃতজ্ঞ। 
+      "আমাদের এই ছোট্ট প্রয়াসে আপনাদের পাশে পেয়ে আমরা কৃতজ্ঞ। 
       ধন্যবাদ অ্যাপটি ব্যবহার করার জন্য! ❤️"
     </div>
 
@@ -276,8 +274,9 @@
 <!-- ========== TOAST ========== -->
 <div class="toast" id="toast"></div>
 
+<!-- 🆕 FIX #10: sync.js সরানো হয়েছে — এখানে দরকার নেই -->
 <script src="js/common.js"></script>
-  <script>
+<script>
   let currentRating = 0;
 
   function rate(stars) {
@@ -301,16 +300,14 @@
     const text = document.getElementById('feedbackText').value.trim();
     const message = "হিসাবের খাতা অ্যাপের ফিডব্যাক\n\n" +
                     "রেটিং: " + currentRating + " স্টার\n\n" +
-                    "মতামত: " + (text || "কোনো মন্তব্য লেখা হয়নি।");
+                    "মতামত: " + (text || "কোনো মন্তব্য লেখা হয়নি।");
 
     if (method === 'whatsapp') {
-      // 🚨 এখানে আপনার হোয়াটসঅ্যাপ নাম্বার দিন (কান্ট্রি কোড ৮৮ সহ, যেমন: 88017XXXXXXXX)
       const yourWhatsAppNumber = "8801709342843"; 
       const whatsappLink = `https://wa.me/${yourWhatsAppNumber}?text=${encodeURIComponent(message)}`;
       window.open(whatsappLink, '_blank');
     } 
     else if (method === 'email') {
-      // 🚨 এখানে আপনার ইমেইল অ্যাড্রেস দিন
       const yourEmail = "nishatbadhon117@gmail.com";
       const subject = encodeURIComponent("Hisaber Khata App Feedback (" + currentRating + " Stars)");
       const body = encodeURIComponent(message);
@@ -318,7 +315,6 @@
       window.location.href = mailtoLink;
     }
     
-    // ফিডব্যাক পাঠানোর পর ফর্ম রিসেট
     setTimeout(() => {
       currentRating = 0;
       document.querySelectorAll('#starContainer span').forEach(el => el.classList.remove('active'));

@@ -38,11 +38,31 @@
         <input type="date" id="fDate">
         <div class="date-bn" id="dateBn"></div>
       </div>
-
-      <div class="form-group">
+		
+		      <div class="form-group">
         <label>দোকানের নাম <span class="req">*</span></label>
-        <input type="text" id="fShopName" placeholder="দোকানের নাম লিখুন">
+        <div class="goods-shop-picker">
+          <button type="button" class="goods-shop-trigger placeholder" id="goodsShopTrigger" onclick="toggleGoodsShopPanel(event)">
+            <span id="goodsShopTriggerText">-- নির্বাচন করুন --</span>
+            <span class="arrow">▼</span>
+          </button>
+          <div class="goods-shop-panel" id="goodsShopPanel">
+            <input type="text" class="goods-shop-search" id="goodsShopSearch" placeholder="🔍 খুঁজুন..." oninput="renderGoodsShopList()">
+            <div class="goods-shop-list" id="goodsShopList"></div>
+            <div class="goods-shop-add">
+              <button type="button" class="goods-shop-add-btn" id="goodsShopAddBtn" onclick="showAddGoodsShopForm(event)">
+                ➕ নতুন দোকান যোগ করুন
+              </button>
+              <div class="goods-shop-add-form" id="goodsShopAddForm">
+                <input type="text" id="goodsShopNewInput" placeholder="নতুন দোকানের নাম" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewGoodsShop();}">
+                <button type="button" class="ok" onclick="addNewGoodsShop()">যোগ</button>
+                <button type="button" class="no" onclick="hideAddGoodsShopForm(event)">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+		
 
       <div class="form-group">
         <label>বিবরণ <span class="opt">(ঐচ্ছিক)</span></label>
@@ -51,28 +71,28 @@
 
       <div class="form-group">
         <label>মূল্য <span class="req">*</span></label>
-        <input type="text" id="fPrice" placeholder="0" inputmode="decimal" autocomplete="off">
+        <input type="text" id="fPrice" placeholder="0"   autocomplete="off">
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>নগদ</label>
-          <input type="text" id="fCash" placeholder="0" inputmode="decimal" autocomplete="off">
+          <input type="text" id="fCash" placeholder="0"   autocomplete="off">
         </div>
         <div class="form-group">
           <label>বাকি</label>
-          <input type="text" id="fDue" placeholder="0" inputmode="decimal" autocomplete="off">
+          <input type="text" id="fDue" placeholder="0"   autocomplete="off">
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>বাকি প্রদান</label>
-          <input type="text" id="fPaid" placeholder="0" inputmode="decimal" autocomplete="off">
+          <input type="text" id="fPaid" placeholder="0"   autocomplete="off">
         </div>
         <div class="form-group">
           <label>খরচ</label>
-          <input type="text" id="fCost" placeholder="0" inputmode="decimal" autocomplete="off">
+          <input type="text" id="fCost" placeholder="0"   autocomplete="off">
         </div>
       </div>
 

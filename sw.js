@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hishaber-khata-v5';
+const CACHE_NAME = 'hishaber-khata-v6';
 
 const ASSETS_TO_CACHE = [
   './',
@@ -6,19 +6,25 @@ const ASSETS_TO_CACHE = [
   './home.html',
   './shop.html',
   './goods.html',
+  './roz.html',
   './faq.html',
   './about.html',
   './css/common.css',
   './css/home.css',
   './css/shop.css',
   './css/goods.css',
+  './css/roz.css',
   './js/common.js',
   './js/home.js',
   './js/shop.js',
   './js/goods.js',
+  './js/roz.js',
   './js/sync.js',
   './manifest.json',
-  './logo.png'
+  './recycle-bin.html',  // 🆕
+  './logo.png',
+  './logo-192.png',    // 🆕
+  './logo-512.png'     // 🆕
 ];
 
 self.addEventListener('install', (event) => {
@@ -53,6 +59,8 @@ self.addEventListener('fetch', (event) => {
         if (event.request.mode === 'navigate') {
           return caches.match('./index.html');
         }
+        // 🆕 FIX: undefined এর বদলে Response.error() রিটার্ন
+        return Response.error();
       });
     })
   );
