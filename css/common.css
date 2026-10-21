@@ -1702,3 +1702,8 @@ body.amoled-mode td.shop-name-cell { color: #6EE7B7 !important; }
 body.amoled-mode td.customer-cell  { color: #C4B5FD !important; }
 body.amoled-mode td.seller-cell    { color: #C4B5FD !important; }
 body.amoled-mode td.shopname-cell  { color: #5EEAD4 !important; }
+
+/* ============ 🆕 রোজ হিসাব কার্ড ============ */
+.card-roz {
+  background: linear-gradient(135deg, #B45309, #F59E0B);
+}
