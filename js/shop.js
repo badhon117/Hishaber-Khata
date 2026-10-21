@@ -5,19 +5,19 @@
 /* ---------- Storage Keys ---------- */
 const STORAGE_KEY = 'hisaber_khata_shop_v1';
 const SHOP_KEY = 'hisaber_khata_shops_v1';
-const SELLER_KEY = 'hisaber_khata_sellers_v1';   // 🆕
+const SELLER_KEY = 'hisaber_khata_sellers_v1';
 const DEFAULT_SHOPS = ['জারা ফ্যাশন', 'জারা স্পোর্টস'];
 
 /* ---------- State ---------- */
 let entries = [];
 let shops = [];
-let sellers = [];                                // 🆕
+let sellers = [];
 let currentShop = '';
-let currentSeller = '';                          // 🆕
+let currentSeller = '';
 let isSelectMode = false;
 let selectedIds = new Set();
 let shopManageMode = false;
-let sellerManageMode = false;                    // 🆕
+let sellerManageMode = false;
 
 /* ============================================================
    Storage Load / Save
@@ -32,7 +32,6 @@ function loadData() {
     saveShops();
   }
 
-  // 🆕 বিক্রেতা — সম্পূর্ণ খালি থেকে শুরু
   sellers = loadFromStorage(SELLER_KEY, []);
   if (!Array.isArray(sellers)) sellers = [];
 }
@@ -51,7 +50,7 @@ function saveShops() {
   }
 }
 
-function saveSellers() {                          // 🆕
+function saveSellers() {
   const success = saveToStorage(SELLER_KEY, sellers);
   if (!success) {
     throw new Error('STORAGE_WRITE_FAILED');
@@ -90,7 +89,7 @@ function switchTab(which) {
     fab.classList.add('show');
     renderMonthOptions();
     refreshShopDropdowns();
-	refreshSellerDropdowns();      // 🆕
+    refreshSellerDropdowns();
     renderTable();
   }
 }
@@ -100,7 +99,7 @@ function switchTab(which) {
    ============================================================ */
 function toggleShopPanel(e) {
   if (e) e.stopPropagation();
-  closeSellerPanel(); // বিক্রেতার প্যানেল খোলা থাকলে বন্ধ করে দেব
+  closeSellerPanel();
   const panel = document.getElementById('shopPanel');
   const trigger = document.getElementById('shopTrigger');
   if (panel.classList.contains('open')) {
@@ -281,7 +280,6 @@ function addNewShop() {
     return; 
   }
   
-  // একই নাম আগে থেকে আছে কি না কেস-ইনসেন্সিটিভ চেক
   if (shops.some(s => s.toLowerCase() === name.toLowerCase())) { 
     showToast('এই দোকান ইতিমধ্যে আছে', 'error'); 
     return; 
@@ -303,13 +301,23 @@ function addNewShop() {
   showToast('নতুন দোকান যোগ হয়েছে', 'success');
 }
 
+// 🆕 FIX #7ক: shops + entries থেকে সব ইউনিক দোকান
 function refreshShopDropdowns() {
   const sel = document.getElementById('filterShop');
   if (!sel) return;
   const current = sel.value;
+  
+  // shops + entries থেকে সব ইউনিক দোকান সংগ্রহ
+  const shopSet = new Set(shops);
+  entries.forEach(e => {
+    const s = (e.shop || '').trim();
+    if (s) shopSet.add(s);
+  });
+  
+  const sorted = Array.from(shopSet).sort();
   sel.innerHTML = '<option value="">সব দোকান</option>' +
-    shops.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-  if (shops.includes(current)) sel.value = current;
+    sorted.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  if (sorted.includes(current)) sel.value = current;
 }
 
 /* ============================================================
@@ -317,7 +325,7 @@ function refreshShopDropdowns() {
    ============================================================ */
 function toggleSellerPanel(e) {
   if (e) e.stopPropagation();
-  closeShopPanel(); // দোকানের প্যানেল খোলা থাকলে বন্ধ করে দেব
+  closeShopPanel();
   const panel = document.getElementById('sellerPanel');
   const trigger = document.getElementById('sellerTrigger');
   if (panel.classList.contains('open')) {
@@ -493,13 +501,23 @@ function addNewSeller() {
   showToast('নতুন বিক্রেতা যোগ হয়েছে', 'success');
 }
 
+// 🆕 FIX #7খ: sellers + entries থেকে সব ইউনিক বিক্রেতা
 function refreshSellerDropdowns() {
   const sel = document.getElementById('filterSeller');
   if (!sel) return;
   const current = sel.value;
+  
+  // sellers + entries থেকে সব ইউনিক বিক্রেতা সংগ্রহ
+  const sellerSet = new Set(sellers);
+  entries.forEach(e => {
+    const s = (e.seller || '').trim();
+    if (s) sellerSet.add(s);
+  });
+  
+  const sorted = Array.from(sellerSet).sort();
   sel.innerHTML = '<option value="">সব বিক্রেতা</option>' +
-    sellers.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
-  if (sellers.includes(current)) sel.value = current;
+    sorted.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  if (sorted.includes(current)) sel.value = current;
 }
 
 /* ============================================================
@@ -579,16 +597,6 @@ function updateDateBn() {
 }
 
 /* ---------- Save / Delete ---------- */
-function evaluateAllMathFields() {
-  const ids = ['fAmount', 'fCash', 'fBkash', 'fPrice', 'fDue', 'fReceived', 'fCost', 'fPaid'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && typeof evaluateMathField === 'function') {
-      evaluateMathField(el);
-    }
-  });
-}
-
 function saveEntry() {
   // 🆕 প্রথমে সব ম্যাথ ফিল্ড evaluate করি — invalid হলে সেখানেই থামি
   const mathIds = ['fPrice', 'fCash', 'fDue', 'fReceived', 'fCost'];
@@ -598,7 +606,7 @@ function saveEntry() {
       const isValid = evaluateMathField(el);
       if (!isValid) {
         el.focus();
-        return;   // 🛑 invalid হলে save হবে না
+        return;
       }
     }
   }
@@ -641,19 +649,67 @@ function saveEntry() {
     renderMonthOptions();
   } catch (err) {
     console.error('Save entry failed:', err);
-    showToast('ডেটা সেভ করা যায়নি। স্টোরেজ পূর্ণ থাকতে পারে।', 'error');
+    showToast('ডেটা সেভ করা যায়নি। স্টোরেজ পূর্ণ থাকতে পারে।', 'error');
   }
+}
+
+// 🆕 ডিলিট করা ডেটা আলাদা করে রাখার ফাংশন
+function archiveDeleted(items) {
+  if (!items || items.length === 0) return;
+  let deletedData = loadFromStorage('hisaber_khata_deleted_data', []);
+  let currentUser = localStorage.getItem('user_email') || 'anonymous';
+  
+  items.forEach(item => {
+    deletedData.push({
+      ...item,
+      deletedFrom: 'shop', // এখানে 'shop', 'goods', বা 'roz' বসাবেন
+      deletedAt: Date.now(),
+      deletedBy: currentUser
+    });
+  });
+  saveToStorage('hisaber_khata_deleted_data', deletedData);
+}
+
+// deleteCurrent() এবং deleteSelected() আগের মতোই থাকবে, শুধু archiveDeleted() কল করবেন
+
+function processDelete(itemsToDelete) {
+  if (!itemsToDelete || itemsToDelete.length === 0) return;
+  archiveDeleted(itemsToDelete);
+  const idsToDelete = itemsToDelete.map(i => i.id);
+  entries = entries.filter(x => !idsToDelete.includes(x.id));
+  saveData();
+  renderMonthOptions();
+  renderTable();
+
+  showUndoToast('ডিলিট হয়েছে', itemsToDelete, (restoreItems) => {
+    entries.push(...restoreItems);
+    saveData();
+    renderMonthOptions();
+    renderTable();
+    let deletedData = loadFromStorage('hisaber_khata_deleted_data', []);
+    deletedData = deletedData.filter(d => !restoreItems.some(r => r.id === d.id));
+    saveToStorage('hisaber_khata_deleted_data', deletedData);
+  });
 }
 
 function deleteCurrent() {
   const id = document.getElementById('editId').value;
   if (!id) return;
   if (!askConfirm('এই এন্ট্রিটি ডিলিট করবেন?')) return;
-  entries = entries.filter(x => x.id !== id);
-  saveData();
+  const itemToDelete = entries.find(x => x.id === id);
+  if (itemToDelete) processDelete([itemToDelete]);
   startNewEntry();
-  renderMonthOptions();
-  showToast('ডিলিট হয়েছে', 'success');
+}
+
+function deleteSelected() {
+  if (selectedIds.size === 0) {
+    showToast('কিছু নির্বাচন করুন', 'error');
+    return;
+  }
+  if (!askConfirm(toBn(selectedIds.size) + 'টি এন্ট্রি ডিলিট করবেন?')) return;
+  const itemsToDelete = entries.filter(e => selectedIds.has(e.id));
+  processDelete(itemsToDelete);
+  exitSelectMode();
 }
 
 /* ============================================================
@@ -823,19 +879,7 @@ function updateSelCount() {
   if (el) el.textContent = toBn(selectedIds.size) + 'টি নির্বাচিত';
 }
 
-function deleteSelected() {
-  if (selectedIds.size === 0) {
-    showToast('কিছু নির্বাচন করুন', 'error');
-    return;
-  }
-  if (!askConfirm(toBn(selectedIds.size) + 'টি এন্ট্রি ডিলিট করবেন?')) return;
-  entries = entries.filter(e => !selectedIds.has(e.id));
-  saveData();
-  exitSelectMode();
-  renderMonthOptions();
-  renderTable();
-  showToast('ডিলিট হয়েছে', 'success');
-}
+
 
 /* ============================================================
    Summary Grid (২x২)
@@ -883,7 +927,7 @@ function exportCSV() {
     return;
   }
 
-  const rows = [['তারিখ', 'দোকান', 'বিক্রয়কারী', 'ক্রয়কারী', 'বিবরণ', 'মূল্য', 'নগদ', 'বাকি', 'বাকি প্রাপ্ত', 'খরচ', 'মন্তব্য']];
+  const rows = [['তারিখ', 'দোকান', 'বিক্রয়কারী', 'ক্রয়কারী', 'বিবরণ', 'মূল্য', 'নগদ', 'বাকি', 'বাকি প্রাপ্ত', 'খরচ', 'মন্তব্য']];
   list.forEach(e => {
     rows.push([
       formatDateBn(e.date), e.shop || '', e.seller || '', e.customer || '', e.description || '',
@@ -912,6 +956,29 @@ function exportCSV() {
    ============================================================ */
 function attachEventListeners() {
   document.getElementById('fDate').addEventListener('change', updateDateBn);
+
+  const inputIds = ['fPrice', 'fCash', 'fDue', 'fReceived', 'fCost'];
+
+  inputIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.addEventListener('input', (e) => {
+      const original = e.target.value;
+      const converted = bnToEn(original);
+      const filtered = converted.replace(/[^0-9+\-*/%().\s]/g, '');
+
+      if (filtered !== original) {
+        e.target.value = filtered;
+
+        if (converted !== original && filtered === converted) {
+          // বাংলা সংখ্যা ছিল — চুপচাপ
+        } else {
+          showToast('শুধু সংখ্যা এবং + - * / % ব্যবহার করুন', 'error');
+        }
+      }
+    });
+  });
 }
 
 /* ============================================================
@@ -968,7 +1035,8 @@ function populateChartFilters() {
 
   if (shopSelect) {
     const currentShopValue = shopSelect.value;
-    const shopSet = new Set();
+    // 🆕 shops + entries থেকে সব ইউনিক দোকান
+    const shopSet = new Set(shops);
     entries.forEach(e => {
       if (e.shop) shopSet.add(e.shop);
     });

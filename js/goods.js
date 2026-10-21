@@ -4,9 +4,13 @@
 
 /* ---------- Storage Keys ---------- */
 const STORAGE_KEY = 'hisaber_khata_goods_v1';
+const GOODS_SHOPS_KEY = 'hisaber_khata_goods_shops_v1';   // 🆕
 
 /* ---------- State ---------- */
 let entries = [];
+let goodsShops = [];                                    // 🆕
+let currentShopName = '';                               // 🆕
+let goodsShopManageMode = false;                        // 🆕
 let isSelectMode = false;
 let selectedIds = new Set();
 
@@ -16,6 +20,18 @@ let selectedIds = new Set();
 function loadData() {
   entries = loadFromStorage(STORAGE_KEY, []);
   if (!Array.isArray(entries)) entries = [];
+
+  // 🆕 দোকানের তালিকা লোড
+  goodsShops = loadFromStorage(GOODS_SHOPS_KEY, []);
+  if (!Array.isArray(goodsShops)) goodsShops = [];
+}
+
+// 🆕 দোকানের তালিকা সেভ
+function saveGoodsShops() {
+  const success = saveToStorage(GOODS_SHOPS_KEY, goodsShops);
+  if (!success) {
+    throw new Error('STORAGE_WRITE_FAILED');
+  }
 }
 
 function saveData() {
@@ -49,7 +65,7 @@ function switchTab(which) {
     tabStats.classList.add('active');
     fab.classList.add('show');
     renderMonthOptions();
-    refreshShopNameDropdowns();
+	refreshShopNameDropdowns();   // এটা এখন goodsShops থেকে লিস্ট বানাবে
     renderTable();
   }
 }
@@ -60,8 +76,13 @@ function switchTab(which) {
 function startNewEntry() {
   document.getElementById('editId').value = '';
   document.getElementById('fDate').value = todayISO();
-  document.getElementById('fShopName').value = '';
+  
+	// 🆕 দোকান পিকার রিসেট
+  currentShopName = '';
+  document.getElementById('goodsShopTriggerText').textContent = '-- নির্বাচন করুন --';
+  document.getElementById('goodsShopTrigger').classList.add('placeholder');
   document.getElementById('fDescription').value = '';
+  
   document.getElementById('fPrice').value = '';
   document.getElementById('fCash').value = '';
   document.getElementById('fDue').value = '';
@@ -91,7 +112,13 @@ function editEntry(id) {
 
   document.getElementById('editId').value = e.id;
   document.getElementById('fDate').value = e.date;
-  document.getElementById('fShopName').value = e.shopName || '';
+  
+  // 🆕 দোকান পিকারে সেট
+  currentShopName = e.shopName || '';
+  document.getElementById('goodsShopTriggerText').textContent = e.shopName || '-- নির্বাচন করুন --';
+  if (e.shopName) document.getElementById('goodsShopTrigger').classList.remove('placeholder');
+  else document.getElementById('goodsShopTrigger').classList.add('placeholder');
+  
   document.getElementById('fDescription').value = e.description || '';
   document.getElementById('fPrice').value = e.price || '';
   document.getElementById('fCash').value = e.cash || '';
@@ -115,23 +142,25 @@ function updateDateBn() {
 }
 
 /* ---------- Save / Delete ---------- */
+
 function saveEntry() {
-  // ১. সব ম্যাথ ফিল্ড আগে evaluate ও validate করি
-  const ids = ['fPrice', 'fCash', 'fDue', 'fPaid', 'fCost'];
-  for (const id of ids) {
+  // ১. প্রথমে সব ম্যাথ ফিল্ড evaluate করি — invalid হলে সেখানেই থামি
+  const mathIds = ['fPrice', 'fCash', 'fDue', 'fPaid', 'fCost'];
+  for (const id of mathIds) {
     const el = document.getElementById(id);
     if (el && typeof evaluateMathField === 'function') {
       const isValid = evaluateMathField(el);
       if (!isValid) {
         el.focus();
-        return;
+        return;   // 🛑 invalid হলে এখানেই থেমে যাবে, save হবে না
       }
     }
   }
 
+  // ২. ফর্মের মান সংগ্রহ
   const id = document.getElementById('editId').value;
   const date = document.getElementById('fDate').value;
-  const shopName = document.getElementById('fShopName').value.trim();
+  const shopName = currentShopName;
   const description = document.getElementById('fDescription').value.trim();
   const price = parseFloat(document.getElementById('fPrice').value) || 0;
   const cash = parseFloat(document.getElementById('fCash').value) || 0;
@@ -140,20 +169,18 @@ function saveEntry() {
   const cost = parseFloat(document.getElementById('fCost').value) || 0;
   const note = document.getElementById('fNote').value.trim();
 
+  // ৩. ভ্যালিডেশন
   if (!date) { showToast('তারিখ দিন', 'error'); return; }
-  if (!shopName) { showToast('দোকানের নাম লিখুন', 'error'); return; }
-  
-  // আর্থিক মানের বৈধতা পরীক্ষা (ঋণাত্মক হতে পারবে না)
+  if (!shopName) { showToast('দোকানের নাম নির্বাচন করুন', 'error'); return; }
+  if (price <= 0) { showToast('সঠিক মূল্য দিন', 'error'); return; }
+
+  // ৪. আর্থিক মানের ভ্যালিডেশন
   if (price < 0 || cash < 0 || due < 0 || paid < 0 || cost < 0) {
     showToast('আর্থিক পরিমাণ ঋণাত্মক হতে পারে না', 'error');
     return;
   }
 
-  if (price <= 0) { 
-    showToast('সঠিক মূল্য দিন', 'error'); 
-    return; 
-  }
-
+  // ৫. Save
   try {
     if (id) {
       const idx = entries.findIndex(x => x.id === id);
@@ -176,19 +203,67 @@ function saveEntry() {
     renderMonthOptions();
   } catch (err) {
     console.error('Save goods entry failed:', err);
-    showToast('ডেটা সেভ করা যায়নি। স্টোরেজ পূর্ণ থাকতে পারে।', 'error');
+    showToast('ডেটা সেভ করা যায়নি। স্টোরেজ পূর্ণ থাকতে পারে।', 'error');
   }
+}
+
+// 🆕 ডিলিট করা ডেটা আলাদা করে রাখার ফাংশন
+function archiveDeleted(items) {
+  if (!items || items.length === 0) return;
+  let deletedData = loadFromStorage('hisaber_khata_deleted_data', []);
+  let currentUser = localStorage.getItem('user_email') || 'anonymous';
+  
+  items.forEach(item => {
+    deletedData.push({
+      ...item,
+      deletedFrom: 'goods', // এখানে 'shop', 'goods', বা 'roz' বসাবেন
+      deletedAt: Date.now(),
+      deletedBy: currentUser
+    });
+  });
+  saveToStorage('hisaber_khata_deleted_data', deletedData);
+}
+
+// deleteCurrent() এবং deleteSelected() আগের মতোই থাকবে, শুধু archiveDeleted() কল করবেন
+
+function processDelete(itemsToDelete) {
+  if (!itemsToDelete || itemsToDelete.length === 0) return;
+  archiveDeleted(itemsToDelete);
+  const idsToDelete = itemsToDelete.map(i => i.id);
+  entries = entries.filter(x => !idsToDelete.includes(x.id));
+  saveData();
+  renderMonthOptions();
+  renderTable();
+
+  showUndoToast('ডিলিট হয়েছে', itemsToDelete, (restoreItems) => {
+    entries.push(...restoreItems);
+    saveData();
+    renderMonthOptions();
+    renderTable();
+    let deletedData = loadFromStorage('hisaber_khata_deleted_data', []);
+    deletedData = deletedData.filter(d => !restoreItems.some(r => r.id === d.id));
+    saveToStorage('hisaber_khata_deleted_data', deletedData);
+  });
 }
 
 function deleteCurrent() {
   const id = document.getElementById('editId').value;
   if (!id) return;
   if (!askConfirm('এই এন্ট্রিটি ডিলিট করবেন?')) return;
-  entries = entries.filter(x => x.id !== id);
-  saveData();
+  const itemToDelete = entries.find(x => x.id === id);
+  if (itemToDelete) processDelete([itemToDelete]);
   startNewEntry();
-  renderMonthOptions();
-  showToast('ডিলিট হয়েছে', 'success');
+}
+
+function deleteSelected() {
+  if (selectedIds.size === 0) {
+    showToast('কিছু নির্বাচন করুন', 'error');
+    return;
+  }
+  if (!askConfirm(toBn(selectedIds.size) + 'টি এন্ট্রি ডিলিট করবেন?')) return;
+  const itemsToDelete = entries.filter(e => selectedIds.has(e.id));
+  processDelete(itemsToDelete);
+  exitSelectMode();
 }
 
 /* ============================================================
@@ -307,18 +382,21 @@ function renderMonthOptions() {
 /* ============================================================
    Shop Name Dropdown (অটো-লিস্ট)
    ============================================================ */
+
 function refreshShopNameDropdowns() {
   const sel = document.getElementById('filterShopName');
   if (!sel) return;
   const current = sel.value;
 
-  const shopNames = new Set();
+  // 🆕 goodsShops থেকে নেওয়া (edit/delete করলেও ঠিক থাকবে)
+  // তবে যদি entries-এ এমন দোকান থাকে যা goodsShops-এ নেই, সেগুলোও যোগ করি
+  const shopSet = new Set(goodsShops);
   entries.forEach(e => {
     const s = (e.shopName || '').trim();
-    if (s) shopNames.add(s);
+    if (s) shopSet.add(s);
   });
 
-  const sorted = Array.from(shopNames).sort();
+  const sorted = Array.from(shopSet).sort();
   sel.innerHTML = '<option value="">সব দোকান</option>' +
     sorted.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
 
@@ -369,19 +447,7 @@ function updateSelCount() {
   if (el) el.textContent = toBn(selectedIds.size) + 'টি নির্বাচিত';
 }
 
-function deleteSelected() {
-  if (selectedIds.size === 0) {
-    showToast('কিছু নির্বাচন করুন', 'error');
-    return;
-  }
-  if (!askConfirm(toBn(selectedIds.size) + 'টি এন্ট্রি ডিলিট করবেন?')) return;
-  entries = entries.filter(e => !selectedIds.has(e.id));
-  saveData();
-  exitSelectMode();
-  renderMonthOptions();
-  renderTable();
-  showToast('ডিলিট হয়েছে', 'success');
-}
+
 
 /* ============================================================
    Summary Grid (২x২)
@@ -621,10 +687,228 @@ function renderChart() {
 }
 
 /* ============================================================
+   🆕 Goods Shop Picker Logic
+   ============================================================ */
+
+function toggleGoodsShopPanel(e) {
+  if (e) e.stopPropagation();
+  const panel = document.getElementById('goodsShopPanel');
+  const trigger = document.getElementById('goodsShopTrigger');
+  if (panel.classList.contains('open')) {
+    closeGoodsShopPanel();
+  } else {
+    panel.classList.add('open');
+    trigger.classList.add('open');
+    document.getElementById('goodsShopSearch').value = '';
+    renderGoodsShopList();
+    setTimeout(() => document.getElementById('goodsShopSearch').focus(), 100);
+  }
+}
+
+function closeGoodsShopPanel() {
+  const panel = document.getElementById('goodsShopPanel');
+  const trigger = document.getElementById('goodsShopTrigger');
+  const addForm = document.getElementById('goodsShopAddForm');
+  const addBtn = document.getElementById('goodsShopAddBtn');
+  if (panel) panel.classList.remove('open');
+  if (trigger) trigger.classList.remove('open');
+  if (addForm) addForm.classList.remove('open');
+  if (addBtn) addBtn.style.display = 'flex';
+  goodsShopManageMode = false;
+}
+
+// বাইরে ক্লিক করলে বন্ধ
+document.addEventListener('click', e => {
+  const picker = document.querySelector('.goods-shop-picker');
+  if (picker && !picker.contains(e.target)) closeGoodsShopPanel();
+});
+
+function renderGoodsShopList() {
+  const q = (document.getElementById('goodsShopSearch').value || '').toLowerCase().trim();
+  const list = document.getElementById('goodsShopList');
+  const filtered = goodsShops.filter(s => !q || s.toLowerCase().includes(q));
+
+  let html = '';
+  if (goodsShopManageMode) {
+    html += `<button type="button" class="goods-shop-manage-toggle" onclick="toggleGoodsShopManageMode()">✓ ম্যানেজ মোড বন্ধ করুন</button>`;
+  } else {
+    html += `<button type="button" class="goods-shop-manage-toggle" onclick="toggleGoodsShopManageMode()">⚙ এডিট/ডিলিট করুন</button>`;
+  }
+
+  if (filtered.length === 0) {
+    html += `<div style="padding:16px;text-align:center;color:#94A3B8;font-size:13px;">কোনো দোকান পাওয়া যায়নি</div>`;
+  } else {
+    html += filtered.map(s => {
+      const sel = (s === currentShopName) ? ' selected' : '';
+      const manage = goodsShopManageMode ? ' manage-mode' : '';
+      const safeS = escapeAttr(s);
+      return `
+        <div class="goods-shop-item${sel}${manage}" data-shop="${escapeHtml(s)}" onclick="selectGoodsShop(event, '${safeS}')">
+          <span class="goods-shop-item-text">${escapeHtml(s)}</span>
+          <span class="goods-shop-item-actions">
+            <button type="button" onclick="startEditGoodsShop(event, '${safeS}')">এডিট</button>
+            <button type="button" class="del" onclick="deleteGoodsShop(event, '${safeS}')">ডিলিট</button>
+          </span>
+        </div>
+      `;
+    }).join('');
+  }
+  list.innerHTML = html;
+}
+
+function toggleGoodsShopManageMode() {
+  goodsShopManageMode = !goodsShopManageMode;
+  renderGoodsShopList();
+}
+
+function selectGoodsShop(e, shop) {
+  if (e) e.stopPropagation();
+  currentShopName = shop;
+  document.getElementById('goodsShopTriggerText').textContent = shop;
+  document.getElementById('goodsShopTrigger').classList.remove('placeholder');
+  closeGoodsShopPanel();
+}
+
+function startEditGoodsShop(e, shop) {
+  e.stopPropagation();
+  const item = e.target.closest('.goods-shop-item');
+  const oldText = item.querySelector('.goods-shop-item-text');
+  const actions = item.querySelector('.goods-shop-item-actions');
+  oldText.style.display = 'none';
+  if (actions) actions.style.display = 'none';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'goods-shop-edit-input';
+  input.value = shop;
+  item.insertBefore(input, oldText.nextSibling);
+  input.focus();
+  input.select();
+
+  const finish = (save) => {
+    if (save) {
+      const newName = input.value.trim();
+      if (newName && newName !== shop) {
+        // কেস-ইনসেন্সিটিভ ডুপ্লিকেট চেক
+        if (goodsShops.some(s => s.toLowerCase() === newName.toLowerCase() && s !== shop)) {
+          showToast('এই দোকান ইতিমধ্যে আছে', 'error');
+        } else {
+          const idx = goodsShops.indexOf(shop);
+          if (idx >= 0) goodsShops[idx] = newName;
+          // পুরোনো entries-এ দোকানের নাম আপডেট
+          entries.forEach(en => { if (en.shopName === shop) en.shopName = newName; });
+          if (currentShopName === shop) {
+            currentShopName = newName;
+            document.getElementById('goodsShopTriggerText').textContent = newName;
+          }
+          saveGoodsShops();
+          saveData();
+          refreshShopNameDropdowns();
+          showToast('দোকান আপডেট হয়েছে', 'success');
+        }
+      }
+    }
+    renderGoodsShopList();
+  };
+
+  input.onblur = () => finish(true);
+  input.onkeydown = (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+    if (ev.key === 'Escape') { ev.preventDefault(); input.onblur = null; finish(false); }
+  };
+}
+
+function deleteGoodsShop(e, shop) {
+  e.stopPropagation();
+  const used = entries.filter(en => en.shopName === shop).length;
+  let msg = `"${shop}" দোকানটি ডিলিট করবেন?`;
+  if (used > 0) msg += `\n\n${toBn(used)}টি এন্ট্রিতে এই দোকান ব্যবহৃত আছে।`;
+  if (!askConfirm(msg)) return;
+
+  goodsShops = goodsShops.filter(s => s !== shop);
+  saveGoodsShops();
+  if (currentShopName === shop) {
+    currentShopName = '';
+    document.getElementById('goodsShopTriggerText').textContent = '-- নির্বাচন করুন --';
+    document.getElementById('goodsShopTrigger').classList.add('placeholder');
+  }
+  refreshShopNameDropdowns();
+  renderGoodsShopList();
+  showToast('দোকান ডিলিট হয়েছে', 'success');
+}
+
+function showAddGoodsShopForm(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('goodsShopAddBtn').style.display = 'none';
+  document.getElementById('goodsShopAddForm').classList.add('open');
+  const inp = document.getElementById('goodsShopNewInput');
+  inp.value = '';
+  setTimeout(() => inp.focus(), 100);
+}
+
+function hideAddGoodsShopForm(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('goodsShopAddForm').classList.remove('open');
+  document.getElementById('goodsShopAddBtn').style.display = 'flex';
+}
+
+function addNewGoodsShop() {
+  const inp = document.getElementById('goodsShopNewInput');
+  const name = inp.value.trim();
+  if (!name) { showToast('দোকানের নাম লিখুন', 'error'); return; }
+  
+  // কেস-ইনসেন্সিটিভ ডুপ্লিকেট চেক
+  if (goodsShops.some(s => s.toLowerCase() === name.toLowerCase())) {
+    showToast('এই দোকান ইতিমধ্যে আছে', 'error');
+    return;
+  }
+
+  goodsShops.push(name);
+  saveGoodsShops();
+  currentShopName = name;
+  document.getElementById('goodsShopTriggerText').textContent = name;
+  document.getElementById('goodsShopTrigger').classList.remove('placeholder');
+  document.getElementById('goodsShopAddForm').classList.remove('open');
+  document.getElementById('goodsShopAddBtn').style.display = 'flex';
+  refreshShopNameDropdowns();
+  closeGoodsShopPanel();
+  showToast('নতুন দোকান যোগ হয়েছে', 'success');
+}
+
+/* ============================================================
    Event Listeners
    ============================================================ */
+
 function attachEventListeners() {
   document.getElementById('fDate').addEventListener('change', updateDateBn);
+
+  // 🆕 ইনপুট ফিল্ডগুলোতে রিয়েল-টাইম ফিল্টার (বাংলা + ইংরেজি)
+  const inputIds = ['fPrice', 'fCash', 'fDue', 'fPaid', 'fCost'];
+
+  inputIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.addEventListener('input', (e) => {
+      const original = e.target.value;
+
+      // 🆕 বাংলা সংখ্যা → ইংরেজিতে রূপান্তর
+      const converted = bnToEn(original);
+
+      // 🆕 শুধু অনুমোদিত ক্যারেক্টার রাখি
+      const filtered = converted.replace(/[^0-9+\-*/%().\s]/g, '');
+
+      if (filtered !== original) {
+        e.target.value = filtered;
+
+        if (converted !== original && filtered === converted) {
+          // বাংলা সংখ্যা ছিল — চুপচাপ
+        } else {
+          showToast('শুধু সংখ্যা এবং + - * / % ব্যবহার করুন', 'error');
+        }
+      }
+    });
+  });
 }
 
 /* ============================================================

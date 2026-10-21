@@ -200,6 +200,70 @@ function startEditCat(e, cat) {
   };
 }
 
+
+// 🆕 ডিলিট করা ডেটা আলাদা করে রাখার ফাংশন
+function archiveDeleted(items) {
+  if (!items || items.length === 0) return;
+  let deletedData = loadFromStorage('hisaber_khata_deleted_data', []);
+  let currentUser = localStorage.getItem('user_email') || 'anonymous'; 
+  
+  items.forEach(item => {
+    deletedData.push({
+      ...item,
+      deletedFrom: 'home',
+      deletedAt: Date.now(),
+      deletedBy: currentUser
+    });
+  });
+  saveToStorage('hisaber_khata_deleted_data', deletedData);
+}
+
+function processDelete(itemsToDelete) {
+  if (!itemsToDelete || itemsToDelete.length === 0) return;
+  archiveDeleted(itemsToDelete);
+  
+  const idsToDelete = itemsToDelete.map(i => i.id);
+  entries = entries.filter(x => !idsToDelete.includes(x.id));
+  saveData();
+  renderMonthOptions();
+  renderTable();
+
+  showUndoToast('ডিলিট হয়েছে', itemsToDelete, (restoreItems) => {
+    entries.push(...restoreItems);
+    saveData();
+    renderMonthOptions();
+    renderTable();
+    let deletedData = loadFromStorage('hisaber_khata_deleted_data', []);
+    deletedData = deletedData.filter(d => !restoreItems.some(r => r.id === d.id));
+    saveToStorage('hisaber_khata_deleted_data', deletedData);
+  });
+}
+
+function deleteCurrent() {
+  const id = document.getElementById('editId').value;
+  if (!id) return;
+  if (!askConfirm('এই এন্ট্রিটি ডিলিট করবেন?')) return;
+  
+  const itemToDelete = entries.find(x => x.id === id);
+  if (itemToDelete) processDelete([itemToDelete]);
+  
+  startNewEntry();
+}
+
+function deleteSelected() {
+  if (selectedIds.size === 0) {
+    showToast('কিছু নির্বাচন করুন', 'error');
+    return;
+  }
+  if (!askConfirm(toBn(selectedIds.size) + 'টি এন্ট্রি ডিলিট করবেন?')) return;
+  
+  const itemsToDelete = entries.filter(e => selectedIds.has(e.id));
+  
+  // 🆕 আনডু সহ ডিলিট প্রসেস কল করা হলো
+  processDelete(itemsToDelete);
+  exitSelectMode();
+}
+
 function deleteCat(e, cat) {
   e.stopPropagation();
   const used = entries.filter(en => en.category === cat).length;
@@ -346,17 +410,6 @@ function updateAmountHint() {
   }
 }
 
-// 🆕 Save করার আগে সব ম্যাথ ফিল্ড evaluate করি
-function evaluateAllMathFields() {
-  const ids = ['fAmount', 'fCash', 'fBkash', 'fPrice', 'fDue', 'fReceived', 'fCost', 'fPaid'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && typeof evaluateMathField === 'function') {
-      evaluateMathField(el);
-    }
-  });
-}
-
 
 /* ---------- Save / Delete ---------- */
 function saveEntry() {
@@ -425,18 +478,10 @@ function saveEntry() {
     console.error('Save entry failed:', err);
     showToast('ডেটা সেভ করা যায়নি। স্টোরেজ পূর্ণ থাকতে পারে।', 'error');
   }
+  
 }
 
-function deleteCurrent() {
-  const id = document.getElementById('editId').value;
-  if (!id) return;
-  if (!askConfirm('এই এন্ট্রিটি ডিলিট করবেন?')) return;
-  entries = entries.filter(x => x.id !== id);
-  saveData();
-  startNewEntry();
-  renderMonthOptions();
-  showToast('ডিলিট হয়েছে', 'success');
-}
+
 
 /* ============================================================
    Filter / Sort
@@ -574,19 +619,7 @@ function updateSelCount() {
   if (el) el.textContent = toBn(selectedIds.size) + 'টি নির্বাচিত';
 }
 
-function deleteSelected() {
-  if (selectedIds.size === 0) {
-    showToast('কিছু নির্বাচন করুন', 'error');
-    return;
-  }
-  if (!askConfirm(toBn(selectedIds.size) + 'টি এন্ট্রি ডিলিট করবেন?')) return;
-  entries = entries.filter(e => !selectedIds.has(e.id));
-  saveData();
-  exitSelectMode();
-  renderMonthOptions();
-  renderTable();
-  showToast('ডিলিট হয়েছে', 'success');
-}
+
 
 /* ============================================================
    Summary Bar
@@ -651,9 +684,43 @@ function exportCSV() {
    ============================================================ */
 function attachEventListeners() {
   document.getElementById('fDate').addEventListener('change', updateDateBn);
-  document.getElementById('fAmount').addEventListener('input', updateAmountHint);
-  document.getElementById('fCash').addEventListener('input', updateAmountHint);
-  document.getElementById('fBkash').addEventListener('input', updateAmountHint);
+
+  // 🆕 ইনপুট ফিল্ডগুলোতে রিয়েল-টাইম ফিল্টার (বাংলা + ইংরেজি)
+  const inputIds = ['fAmount', 'fCash', 'fBkash'];
+
+  inputIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.addEventListener('input', (e) => {
+      const original = e.target.value;
+
+      // 🆕 বাংলা সংখ্যা → ইংরেজিতে রূপান্তর
+      const converted = bnToEn(original);
+
+      // 🆕 শুধু অনুমোদিত ক্যারেক্টার রাখি
+      const filtered = converted.replace(/[^0-9+\-*/%().\s]/g, '');
+
+      if (filtered !== original) {
+        e.target.value = filtered;
+
+        // বাংলা সংখ্যা ছিল → সফলভাবে ইংরেজিতে রূপান্তর, টোস্ট দেখাব না
+        // অন্য অক্ষর ছিল → টোস্ট দেখাব
+        if (converted !== original && filtered === converted) {
+          // বাংলা সংখ্যা ছিল, রূপান্তর হয়েছে — চুপচাপ
+        } else {
+          showToast('শুধু সংখ্যা এবং + - * / % ব্যবহার করুন', 'error');
+        }
+      }
+
+      updateAmountHint();
+    });
+
+    el.addEventListener('change', updateAmountHint);
+    el.addEventListener('blur', () => {
+      setTimeout(updateAmountHint, 10);
+    });
+  });
 }
 /* ============================================================
    Chart Logic
