@@ -1,16 +1,21 @@
 /* ============================================================
-   Google Drive Sync Logic with Refresh Token (Secured & Updated)
+   Google Drive Sync Logic with Fixed Master Backup (Secured & Updated)
    ============================================================ */
 
 const CLIENT_ID = '555637526676-tje8vroaiqqjqje34uhaecf9vf7hfn6g.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+const MASTER_FILE_NAME = 'hisaber_khata_master_backup.json';
 
 let tokenClient;
 let accessToken = null;
 let isSyncingFromCloud = false;
 
 window.addEventListener('load', () => {
-  // 🆕 FIX #14: Google লোড হওয়ার আগেই টোকেন চেক (UI ঠিক করার জন্য)
+  // ডিফল্টভাবে অটো-সিঙ্ক চালু রাখা (যদি আগে সেট না করা থাকে)
+  if (localStorage.getItem('auto_sync_enabled') === null) {
+    localStorage.setItem('auto_sync_enabled', 'true');
+  }
+
   checkExistingToken();
 
   let googleLoadAttempts = 0;
@@ -61,17 +66,15 @@ function checkExistingToken() {
     if (Date.now() < (parseInt(expiry) - 300000)) {
       accessToken = savedToken;
       updateLoginUI(true);
-      // 🆕 FIX #14: Google লোড না হলেও sync চালানোর চেষ্টা
-      if (typeof google !== 'undefined' && google.accounts) {
-        syncFromDrive(false);
-      } else {
-        // Google স্ক্রিপ্ট পরে লোড হলে sync হবে, এখন শুধু UI আপডেট
-        setTimeout(() => {
-          if (typeof google !== 'undefined' && google.accounts) {
-            syncFromDrive(false);
-          }
-        }, 3000);
-      }
+      
+      const trySync = () => {
+        if (typeof google !== 'undefined' && google.accounts) {
+          syncFromDrive(false);
+        } else {
+          setTimeout(trySync, 1000);
+        }
+      };
+      trySync();
     } else {
       localStorage.removeItem('gdrive_access_token');
       localStorage.removeItem('gdrive_token_expiry');
@@ -132,19 +135,14 @@ async function saveToDrive() {
     goods_entries: loadFromStorage('hisaber_khata_goods_v1', []),
     goods_shops: loadFromStorage('hisaber_khata_goods_shops_v1', []),
     roz_entries: loadFromStorage('hisaber_khata_roz_v1', []),
-    deleted_data: loadFromStorage('hisaber_khata_deleted_data', []) // 🆕
+    deleted_data: loadFromStorage('hisaber_khata_deleted_data', [])
   };
   const fileContent = JSON.stringify(backupData);
   
-  // 🆕 আজকের তারিখ দিয়ে ফাইলের নাম (যেমন: backup_2023-10-27.json)
-  const todayDate = new Date().toISOString().split('T')[0];
-  const fileName = `backup_${todayDate}.json`;
-  
-  const metadata = { name: fileName, mimeType: 'application/json', parents: ['appDataFolder'] };
+  const metadata = { name: MASTER_FILE_NAME, mimeType: 'application/json', parents: ['appDataFolder'] };
 
   try {
-    // ১. আজকের ফাইল আগে থেকে আছে কিনা চেক করা
-    const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${fileName}'`, {
+    const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${MASTER_FILE_NAME}' and trashed=false`, {
       headers: { 'Authorization': 'Bearer ' + accessToken }
     });
 
@@ -158,14 +156,12 @@ async function saveToDrive() {
 
     let saveRes;
     if (fileId) {
-      // ফাইল থাকলে আপডেট করবে
       saveRes = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
         method: 'PATCH',
         headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
         body: fileContent
       });
     } else {
-      // না থাকলে নতুন তৈরি করবে
       const boundary = '-------314159265358979323846';
       const delimiter = "\r\n--" + boundary + "\r\n";
       const close_delim = "\r\n--" + boundary + "--";
@@ -176,9 +172,6 @@ async function saveToDrive() {
         headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'multipart/related; boundary="' + boundary + '"' },
         body: multipartRequestBody
       });
-
-      // 🆕 নতুন ব্যাকআপ তৈরি হলে পুরনো ৩০ দিনের আগের ফাইল ডিলিট করে দেব
-      if (saveRes.ok) cleanupOldBackups();
     }
 
     if (!saveRes.ok) throw new Error('Drive upload failed');
@@ -186,36 +179,6 @@ async function saveToDrive() {
 
   } catch (error) {
     console.error('Google Drive save failed:', error);
-  }
-}
-
-// 🆕 ৩০ দিনের পুরনো ব্যাকআপ ডিলিট করার ফাংশন
-async function cleanupOldBackups() {
-  try {
-    const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name contains 'backup_'`, {
-      headers: { 'Authorization': 'Bearer ' + accessToken }
-    });
-    const data = await searchRes.json();
-    if (!data.files) return;
-
-    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-
-    data.files.forEach(async (file) => {
-      // ফাইলের নাম থেকে তারিখ বের করা (backup_YYYY-MM-DD.json)
-      const dateMatch = file.name.match(/backup_(\d{4}-\d{2}-\d{2})/);
-      if (dateMatch) {
-        const fileDate = new Date(dateMatch[1]).getTime();
-        if (fileDate < thirtyDaysAgo) {
-          await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': 'Bearer ' + accessToken }
-          });
-          console.log('Deleted old backup:', file.name);
-        }
-      }
-    });
-  } catch (e) {
-    console.error('Cleanup error:', e);
   }
 }
 
@@ -259,8 +222,7 @@ function mergeStrings(localArr, cloudArr) {
 async function syncFromDrive(isManualSync = false) {
   if (!accessToken) return;
   try {
-        // 🆕 সব ব্যাকআপ খুঁজে বের করা এবং সর্বশেষটির আইডি নেওয়া
-    const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name contains 'backup_'&orderBy=name desc`, {
+    const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${MASTER_FILE_NAME}' and trashed=false`, {
       headers: { 'Authorization': 'Bearer ' + accessToken }
     });
 
@@ -290,7 +252,6 @@ async function syncFromDrive(isManualSync = false) {
 
       const data = await fileRes.json();
 
-      // 🆕 FIX #5: সিঙ্ক চলাকালীন auto-sync বন্ধ রাখি
       isSyncingFromCloud = true;
 
       const localHome = loadFromStorage('hisaber_khata_home_v1', []) || [];
@@ -325,15 +286,12 @@ async function syncFromDrive(isManualSync = false) {
       const cloudRoz = Array.isArray(data.roz_entries) ? data.roz_entries : [];
       saveToStorage('hisaber_khata_roz_v1', mergeEntries(localRoz, cloudRoz));
 		
-		// 🆕 ডিলিট করা ডেটা সিঙ্ক
-	  const localDeleted = loadFromStorage('hisaber_khata_deleted_data', []) || [];
-	  const cloudDeleted = Array.isArray(data.deleted_data) ? data.deleted_data : [];
-	  saveToStorage('hisaber_khata_deleted_data', mergeEntries(localDeleted, cloudDeleted));
+      const localDeleted = loadFromStorage('hisaber_khata_deleted_data', []) || [];
+      const cloudDeleted = Array.isArray(data.deleted_data) ? data.deleted_data : [];
+      saveToStorage('hisaber_khata_deleted_data', mergeEntries(localDeleted, cloudDeleted));
       
-	  // 🆕 FIX #5: সিঙ্ক শেষ
       isSyncingFromCloud = false;
 
-      // 🆕 FIX #8: reload শুধু manual sync বা main page-এ
       const currentPage = window.location.pathname.split('/').pop() || 'index.html';
       const isMainPage = ['index.html', 'home.html', ''].includes(currentPage);
 
@@ -348,7 +306,7 @@ async function syncFromDrive(isManualSync = false) {
       }
     }
   } catch (error) {
-    isSyncingFromCloud = false;  // 🆕 FIX #5: এরর হলেও ফ্ল্যাগ রিসেট
+    isSyncingFromCloud = false;
     console.error('Drive Load Error:', error);
   }
 }
@@ -369,26 +327,20 @@ window.addEventListener('pageshow', (event) => {
 });
 
 /* ============================================================
-   🆕 Auto-Sync (ডেটা সেভ হলে ব্যাকগ্রাউন্ডে Drive এ)
+   Auto-Sync (ডেটা সেভ হলে ব্যাকগ্রাউন্ডে Drive এ)
    ============================================================ */
 
 let _autoSyncTimer = null;
 
 function triggerAutoSync() {
-  // 🆕 FIX #5: সিঙ্ক চলাকালীন auto-sync বন্ধ (loop এড়াতে)
   if (isSyncingFromCloud) return;
-  
-  // লগইন না থাকলে সিঙ্ক করব না
   if (!accessToken) return;
   
-  // টোকেন মেয়াদ চেক
   const expiry = localStorage.getItem('gdrive_token_expiry');
   if (expiry && Date.now() > (parseInt(expiry) - 300000)) return;
   
-  // অটো-সিঙ্ক বন্ধ থাকলে
   if (localStorage.getItem('auto_sync_enabled') === 'false') return;
   
-  // Debounce: ২ সেকেন্ড পর সিঙ্ক
   if (_autoSyncTimer) clearTimeout(_autoSyncTimer);
   _autoSyncTimer = setTimeout(() => {
     saveToDrive();
@@ -396,7 +348,6 @@ function triggerAutoSync() {
   }, 2000);
 }
 
-// 🆕 অটো-সিঙ্ক চালু/বন্ধ
 function setAutoSync(enabled) {
   localStorage.setItem('auto_sync_enabled', enabled ? 'true' : 'false');
   showToast(enabled ? 'অটো-সিঙ্ক চালু হয়েছে' : 'অটো-সিঙ্ক বন্ধ হয়েছে', 'success');
