@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hishaber-khata-v6';
+const CACHE_NAME = 'hishaber-khata-v7';
 
 const ASSETS_TO_CACHE = [
   './',
