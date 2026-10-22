@@ -1,5 +1,5 @@
 /* ============================================================
-   Google Drive Sync Logic with Fixed Master Backup (Secured & Updated)
+   Google Drive Sync Logic with Smart Merge (Fixed & Secured)
    ============================================================ */
 
 const CLIENT_ID = '555637526676-tje8vroaiqqjqje34uhaecf9vf7hfn6g.apps.googleusercontent.com';
@@ -11,7 +11,6 @@ let accessToken = null;
 let isSyncingFromCloud = false;
 
 window.addEventListener('load', () => {
-  // ডিফল্টভাবে অটো-সিঙ্ক চালু রাখা (যদি আগে সেট না করা থাকে)
   if (localStorage.getItem('auto_sync_enabled') === null) {
     localStorage.setItem('auto_sync_enabled', 'true');
   }
@@ -46,11 +45,8 @@ window.addEventListener('load', () => {
           }
           updateLoginUI(true);
           
-          if (typeof onLoginSuccess === 'function') {
-            onLoginSuccess();
-          } else {
-            syncFromDrive(true);
-          }
+          // লগইন সফল হলে প্রথমে ড্রাইভ থেকে ডেটা টেনে এনে মার্জ করবে, তারপর সেভ করবে
+          syncAndMergeFromDrive(true);
         }
       },
     });
@@ -69,7 +65,7 @@ function checkExistingToken() {
       
       const trySync = () => {
         if (typeof google !== 'undefined' && google.accounts) {
-          syncFromDrive(false);
+          syncAndMergeFromDrive(false);
         } else {
           setTimeout(trySync, 1000);
         }
@@ -117,7 +113,137 @@ function updateLoginUI(isLoggedIn) {
   }
 }
 
+/* ============================================================
+   স্মার্ট মার্জ ফাংশন (লোকাল এবং ক্লাউডের ডেটা একত্রিত করা)
+   ============================================================ */
+function mergeEntries(localArr, cloudArr) {
+  if (!Array.isArray(localArr)) localArr = [];
+  if (!Array.isArray(cloudArr)) cloudArr = [];
+  
+  const merged = [...localArr];
+  const localIds = new Set(localArr.map(e => e.id));
+  
+  cloudArr.forEach(cloudEntry => {
+    if (cloudEntry && cloudEntry.id && !localIds.has(cloudEntry.id)) {
+      merged.push(cloudEntry);
+    }
+  });
+  
+  return merged;
+}
+
+function mergeStrings(localArr, cloudArr) {
+  if (!Array.isArray(localArr)) localArr = [];
+  if (!Array.isArray(cloudArr)) cloudArr = [];
+  
+  const set = new Set([...localArr, ...cloudArr]);
+  return Array.from(set);
+}
+
+// ড্রাইভ থেকে ডেটা এনে লোকাল ডেটার সাথে মার্জ করা এবং ড্রাইভে আপডেট পাঠানো
+async function syncAndMergeFromDrive(isManualSync = false) {
+  if (!accessToken) return;
+  if (isSyncingFromCloud) return;
+
+  try {
+    isSyncingFromCloud = true;
+
+    const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${MASTER_FILE_NAME}' and trashed=false`, {
+      headers: { 'Authorization': 'Bearer ' + accessToken }
+    });
+
+    if (!searchRes.ok) {
+      if (searchRes.status === 401 || searchRes.status === 403) {
+        handleTokenExpired();
+        isSyncingFromCloud = false;
+        return;
+      }
+      throw new Error('Drive load search failed');
+    }
+
+    const searchData = await searchRes.json();
+
+    let cloudData = {};
+    if (searchData.files && searchData.files.length > 0) {
+      const fileId = searchData.files[0].id;
+      const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+        headers: { 'Authorization': 'Bearer ' + accessToken }
+      });
+
+      if (fileRes.ok) {
+        cloudData = await fileRes.json();
+      }
+    }
+
+    // ১. লোকাল ডেটা এবং ক্লাউড ডেটা মার্জ করি
+    const localHome = loadFromStorage('hisaber_khata_home_v1', []) || [];
+    const mergedHome = mergeEntries(localHome, cloudData.home_entries || []);
+    saveToStorage('hisaber_khata_home_v1', mergedHome);
+
+    const localCats = loadFromStorage('hisaber_khata_categories_v1', []) || [];
+    const mergedCats = mergeStrings(localCats, cloudData.home_categories || []);
+    saveToStorage('hisaber_khata_categories_v1', mergedCats);
+
+    const localShop = loadFromStorage('hisaber_khata_shop_v1', []) || [];
+    const mergedShop = mergeEntries(localShop, cloudData.shop_entries || []);
+    saveToStorage('hisaber_khata_shop_v1', mergedShop);
+
+    const localShops = loadFromStorage('hisaber_khata_shops_v1', []) || [];
+    const mergedShops = mergeStrings(localShops, cloudData.shop_shops || []);
+    saveToStorage('hisaber_khata_shops_v1', mergedShops);
+
+    const localSellers = loadFromStorage('hisaber_khata_sellers_v1', []) || [];
+    const mergedSellers = mergeStrings(localSellers, cloudData.shop_sellers || []);
+    saveToStorage('hisaber_khata_sellers_v1', mergedSellers);
+
+    const localGoods = loadFromStorage('hisaber_khata_goods_v1', []) || [];
+    const mergedGoods = mergeEntries(localGoods, cloudData.goods_entries || []);
+    saveToStorage('hisaber_khata_goods_v1', mergedGoods);
+
+    const localGoodsShops = loadFromStorage('hisaber_khata_goods_shops_v1', []) || [];
+    const mergedGoodsShops = mergeStrings(localGoodsShops, cloudData.goods_shops || []);
+    saveToStorage('hisaber_khata_goods_shops_v1', mergedGoodsShops);
+    
+    const localRoz = loadFromStorage('hisaber_khata_roz_v1', []) || [];
+    const mergedRoz = mergeEntries(localRoz, cloudData.roz_entries || []);
+    saveToStorage('hisaber_khata_roz_v1', mergedRoz);
+    
+    const localDeleted = loadFromStorage('hisaber_khata_deleted_data', []) || [];
+    const mergedDeleted = mergeEntries(localDeleted, cloudData.deleted_data || []);
+    saveToStorage('hisaber_khata_deleted_data', mergedDeleted);
+
+    isSyncingFromCloud = false;
+
+    // ২. মার্জ করার পর সম্পূর্ণ ডেটা আবার ড্রাইভে ব্যাকআপ পাঠিয়ে দিই যাতে উভয় ডিভাইস একই আপডেট পায়
+    await saveToDriveSilently();
+
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    const isMainPage = ['index.html', 'home.html', ''].includes(currentPage);
+
+    const shouldReload = isManualSync || (!sessionStorage.getItem('drive_synced_once') && isMainPage);
+    
+    if (shouldReload) {
+      sessionStorage.setItem('drive_synced_once', 'true');
+      showToast('সব ডেটা সফলভাবে সিঙ্ক ও মার্জ হয়েছে ✅', 'success');
+      setTimeout(() => { window.location.reload(); }, 1200);
+    } else {
+      sessionStorage.setItem('drive_synced_once', 'true');
+    }
+
+  } catch (error) {
+    isSyncingFromCloud = false;
+    console.error('Drive Sync & Merge Error:', error);
+  }
+}
+
+// ড্রাইভে সেভ করার মূল ফাংশন
 async function saveToDrive() {
+  await saveToDriveSilently();
+  showToast('ড্রাইভে সফলভাবে সেভ হয়েছে ✅', 'success');
+}
+
+// ব্যাকগ্রাউন্ডে নীরবে ড্রাইভে ডেটা আপলোড করার ফাংশন
+async function saveToDriveSilently() {
   if (!accessToken) return;
 
   const expiry = localStorage.getItem('gdrive_token_expiry');
@@ -154,9 +280,8 @@ async function saveToDrive() {
     const searchData = await searchRes.json();
     let fileId = searchData.files && searchData.files.length > 0 ? searchData.files[0].id : null;
 
-    let saveRes;
     if (fileId) {
-      saveRes = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
         method: 'PATCH',
         headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
         body: fileContent
@@ -167,16 +292,12 @@ async function saveToDrive() {
       const close_delim = "\r\n--" + boundary + "--";
       const multipartRequestBody = delimiter + 'Content-Type: application/json\r\n\r\n' + JSON.stringify(metadata) + delimiter + 'Content-Type: application/json\r\n\r\n' + fileContent + close_delim;
       
-      saveRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'multipart/related; boundary="' + boundary + '"' },
         body: multipartRequestBody
       });
     }
-
-    if (!saveRes.ok) throw new Error('Drive upload failed');
-    console.log('✅ Drive save successful');
-
   } catch (error) {
     console.error('Google Drive save failed:', error);
   }
@@ -192,122 +313,6 @@ function handleTokenExpired() {
   if (!lastNotice) {
     sessionStorage.setItem('token_expired_notice', 'true');
     showToast('সিঙ্ক বন্ধ হয়েছে। আবার লগইন করুন।', 'error');
-  }
-}
-
-function mergeEntries(localArr, cloudArr) {
-  if (!Array.isArray(localArr)) localArr = [];
-  if (!Array.isArray(cloudArr)) cloudArr = [];
-  
-  const merged = [...localArr];
-  const localIds = new Set(localArr.map(e => e.id));
-  
-  cloudArr.forEach(cloudEntry => {
-    if (cloudEntry && cloudEntry.id && !localIds.has(cloudEntry.id)) {
-      merged.push(cloudEntry);
-    }
-  });
-  
-  return merged;
-}
-
-function mergeStrings(localArr, cloudArr) {
-  if (!Array.isArray(localArr)) localArr = [];
-  if (!Array.isArray(cloudArr)) cloudArr = [];
-  
-  const set = new Set([...localArr, ...cloudArr]);
-  return Array.from(set);
-}
-
-async function syncFromDrive(isManualSync = false) {
-  if (!accessToken) return;
-  try {
-    const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${MASTER_FILE_NAME}' and trashed=false`, {
-      headers: { 'Authorization': 'Bearer ' + accessToken }
-    });
-
-    if (!searchRes.ok) {
-      if (searchRes.status === 401 || searchRes.status === 403) {
-        handleTokenExpired();
-        return;
-      }
-      throw new Error('Drive load search failed: HTTP ' + searchRes.status);
-    }
-
-    const searchData = await searchRes.json();
-
-    if (searchData.files && searchData.files.length > 0) {
-      const fileId = searchData.files[0].id;
-      const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-        headers: { 'Authorization': 'Bearer ' + accessToken }
-      });
-
-      if (!fileRes.ok) {
-        if (fileRes.status === 401 || fileRes.status === 403) {
-          handleTokenExpired();
-          return;
-        }
-        throw new Error('Drive download failed: HTTP ' + fileRes.status);
-      }
-
-      const data = await fileRes.json();
-
-      isSyncingFromCloud = true;
-
-      const localHome = loadFromStorage('hisaber_khata_home_v1', []) || [];
-      const cloudHome = Array.isArray(data.home_entries) ? data.home_entries : [];
-      saveToStorage('hisaber_khata_home_v1', mergeEntries(localHome, cloudHome));
-
-      const localCats = loadFromStorage('hisaber_khata_categories_v1', []) || [];
-      const cloudCats = Array.isArray(data.home_categories) ? data.home_categories : [];
-      saveToStorage('hisaber_khata_categories_v1', mergeStrings(localCats, cloudCats));
-
-      const localShop = loadFromStorage('hisaber_khata_shop_v1', []) || [];
-      const cloudShop = Array.isArray(data.shop_entries) ? data.shop_entries : [];
-      saveToStorage('hisaber_khata_shop_v1', mergeEntries(localShop, cloudShop));
-
-      const localShops = loadFromStorage('hisaber_khata_shops_v1', []) || [];
-      const cloudShops = Array.isArray(data.shop_shops) ? data.shop_shops : [];
-      saveToStorage('hisaber_khata_shops_v1', mergeStrings(localShops, cloudShops));
-
-      const localSellers = loadFromStorage('hisaber_khata_sellers_v1', []) || [];
-      const cloudSellers = Array.isArray(data.shop_sellers) ? data.shop_sellers : [];
-      saveToStorage('hisaber_khata_sellers_v1', mergeStrings(localSellers, cloudSellers));
-
-      const localGoods = loadFromStorage('hisaber_khata_goods_v1', []) || [];
-      const cloudGoods = Array.isArray(data.goods_entries) ? data.goods_entries : [];
-      saveToStorage('hisaber_khata_goods_v1', mergeEntries(localGoods, cloudGoods));
-
-      const localGoodsShops = loadFromStorage('hisaber_khata_goods_shops_v1', []) || [];
-      const cloudGoodsShops = Array.isArray(data.goods_shops) ? data.goods_shops : [];
-      saveToStorage('hisaber_khata_goods_shops_v1', mergeStrings(localGoodsShops, cloudGoodsShops));
-		
-      const localRoz = loadFromStorage('hisaber_khata_roz_v1', []) || [];
-      const cloudRoz = Array.isArray(data.roz_entries) ? data.roz_entries : [];
-      saveToStorage('hisaber_khata_roz_v1', mergeEntries(localRoz, cloudRoz));
-		
-      const localDeleted = loadFromStorage('hisaber_khata_deleted_data', []) || [];
-      const cloudDeleted = Array.isArray(data.deleted_data) ? data.deleted_data : [];
-      saveToStorage('hisaber_khata_deleted_data', mergeEntries(localDeleted, cloudDeleted));
-      
-      isSyncingFromCloud = false;
-
-      const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-      const isMainPage = ['index.html', 'home.html', ''].includes(currentPage);
-
-      const shouldReload = isManualSync || (!sessionStorage.getItem('drive_synced_once') && isMainPage);
-      
-      if (shouldReload) {
-        sessionStorage.setItem('drive_synced_once', 'true');
-        showToast('সব ডেটা মিলিয়ে নেওয়া হয়েছে ✅', 'success');
-        setTimeout(() => { window.location.reload(); }, 1200);
-      } else {
-        sessionStorage.setItem('drive_synced_once', 'true');
-      }
-    }
-  } catch (error) {
-    isSyncingFromCloud = false;
-    console.error('Drive Load Error:', error);
   }
 }
 
@@ -327,7 +332,7 @@ window.addEventListener('pageshow', (event) => {
 });
 
 /* ============================================================
-   Auto-Sync (ডেটা সেভ হলে ব্যাকগ্রাউন্ডে Drive এ)
+   Auto-Sync (ডেটা সেভ হলে ব্যাকগ্রাউন্ডে Drive এ মার্জ ও সিঙ্ক)
    ============================================================ */
 
 let _autoSyncTimer = null;
@@ -343,7 +348,7 @@ function triggerAutoSync() {
   
   if (_autoSyncTimer) clearTimeout(_autoSyncTimer);
   _autoSyncTimer = setTimeout(() => {
-    saveToDrive();
+    syncAndMergeFromDrive(false); // ব্যাকগ্রাউন্ডে মার্জ করে ড্রাইভে সেভ করবে
     _autoSyncTimer = null;
   }, 2000);
 }
